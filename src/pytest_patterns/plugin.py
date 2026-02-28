@@ -333,6 +333,11 @@ class Audit:
         for line in self.content:
             counts[line.status] += 1
 
+        # Count primary vs cascading failures
+        total_unmatched = len(self.unmatched_expectations)
+        primary_failures = 1 if total_unmatched > 0 else 0
+        cascading_failures = max(0, total_unmatched - 1)
+
         return {
             "status": "passed" if self.is_ok() else "failed",
             "summary": {
@@ -341,7 +346,9 @@ class Audit:
                 "optional": counts[Status.OPTIONAL],
                 "unexpected": counts[Status.UNEXPECTED],
                 "refused": counts[Status.REFUSED],
-                "unmatched": len(self.unmatched_expectations),
+                "unmatched": total_unmatched,
+                "primary_failures": primary_failures,
+                "cascading_failures": cascading_failures,
             },
             "lines": [
                 {

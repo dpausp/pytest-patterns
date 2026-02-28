@@ -399,3 +399,51 @@ WRONG second
 
         assert len(result["unmatched_patterns"]) == 1
         assert result["unmatched_patterns"][0]["failure_type"] == "primary"
+
+
+class TestSummaryFailureCounts:
+    """Tests for primary/cascading failure counts in summary."""
+
+    def test_no_failures_means_zero_counts(self, patterns: PatternsLib) -> None:
+        """Passed test has zero primary/cascading failures."""
+        patterns.test.in_order("hello")
+        audit = patterns.test._audit("hello")
+        result = audit.to_json()
+
+        assert result["summary"]["primary_failures"] == 0
+        assert result["summary"]["cascading_failures"] == 0
+
+    def test_single_failure_is_primary(self, patterns: PatternsLib) -> None:
+        """Single failure counts as 1 primary, 0 cascading."""
+        patterns.test.in_order("expected")
+        audit = patterns.test._audit("wrong")
+        result = audit.to_json()
+
+        assert result["summary"]["primary_failures"] == 1
+        assert result["summary"]["cascading_failures"] == 0
+
+    def test_multiple_failures_have_one_primary(
+        self, patterns: PatternsLib
+    ) -> None:
+        """Multiple failures: 1 primary, rest is cascading."""
+        patterns.test.in_order(
+            """\
+first
+second
+third
+fourth
+"""
+        )
+        audit = patterns.test._audit(
+            """\
+WRONG first
+WRONG second
+WRONG third
+WRONG fourth
+"""
+        )
+        result = audit.to_json()
+
+        assert result["summary"]["primary_failures"] == 1
+        assert result["summary"]["cascading_failures"] == 3
+        assert result["summary"]["unmatched"] == 4
