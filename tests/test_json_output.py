@@ -350,3 +350,52 @@ WRONG third
             assert "context_lines" in unmatched
             assert "context_start" in unmatched
             assert "actual_at_line" in unmatched
+
+    def test_first_unmatched_is_primary(self, patterns: PatternsLib) -> None:
+        """First unmatched pattern is marked as 'primary' failure."""
+        patterns.test.in_order(
+            """\
+first
+second
+third
+"""
+        )
+
+        audit = patterns.test._audit(
+            """\
+WRONG first
+WRONG second
+WRONG third
+"""
+        )
+        result = audit.to_json()
+
+        unmatched = result["unmatched_patterns"]
+        assert len(unmatched) >= 1
+
+        # First is primary
+        assert unmatched[0]["failure_type"] == "primary"
+
+        # Rest are cascading
+        for entry in unmatched[1:]:
+            assert entry["failure_type"] == "cascading"
+
+    def test_single_unmatched_is_primary(self, patterns: PatternsLib) -> None:
+        """Single unmatched pattern is marked as 'primary'."""
+        patterns.test.in_order(
+            """\
+first
+second
+"""
+        )
+
+        audit = patterns.test._audit(
+            """\
+first
+WRONG second
+"""
+        )
+        result = audit.to_json()
+
+        assert len(result["unmatched_patterns"]) == 1
+        assert result["unmatched_patterns"][0]["failure_type"] == "primary"

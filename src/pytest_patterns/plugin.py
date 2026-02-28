@@ -353,8 +353,10 @@ class Audit:
                 for i, line in enumerate(self.content)
             ],
             "unmatched_patterns": [
-                self._build_unmatched_entry(name, line_str)
-                for name, line_str in self.unmatched_expectations
+                self._build_unmatched_entry(name, line_str, is_primary=(i == 0))
+                for i, (name, line_str) in enumerate(
+                    self.unmatched_expectations
+                )
             ],
             "matched_refused": [
                 self._build_matched_refused_entry(name, line_str)
@@ -363,12 +365,13 @@ class Audit:
         }
 
     def _build_unmatched_entry(
-        self, name: str, expected_line: str
+        self, name: str, expected_line: str, is_primary: bool = True
     ) -> dict[str, Any]:
         """Build JSON entry for an unmatched pattern with context."""
         entry: dict[str, Any] = {
             "pattern": name,
             "expected_line": expected_line,
+            "failure_type": "primary" if is_primary else "cascading",
         }
         position = self._unmatched_positions.get((name, expected_line))
         if position is not None:
