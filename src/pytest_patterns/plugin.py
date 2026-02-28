@@ -154,10 +154,18 @@ class Audit:
     content: list[Line]
     unmatched_expectations: list[tuple[str, str]]
     matched_refused: set[tuple[str, str]]
+    # Track positions for JSON output:
+    # (pattern_name, expected_line) -> line_number (1-based)
+    _unmatched_positions: dict[tuple[str, str], int]
+    # Track positions for matched refused:
+    # (pattern_name, refused_line) -> line_number (1-based)
+    _matched_refused_positions: dict[tuple[str, str], int]
 
     def __init__(self, content: str):
         self.unmatched_expectations = []
         self.matched_refused = set()
+        self._unmatched_positions = {}
+        self._matched_refused_positions = {}
 
         self.content = []
         for line in content.splitlines():
@@ -170,21 +178,37 @@ class Audit:
         """Expect all lines exist and come in order, but they
         may be interleaved with other lines."""
         cursor = self.cursor()
+        cursor_index = 0  # Track position for JSON output (1-based)
+        last_match_position = 0  # Position of last successful match
         have_some_match = False
         for expected_line in expected_lines:
+            start_position = (
+                last_match_position + 1
+            )  # Where we started searching
             for line in cursor:
+                cursor_index += 1
                 if line.matches(expected_line):
                     line.mark(Status.EXPECTED, name)
                     have_some_match = True
+                    last_match_position = cursor_index
                     break
             else:
+                # No match found - record position where matching
+                # stopped. The failure position is the line after
+                # the last successful match.
+                failure_position = start_position
                 self.unmatched_expectations.append((name, expected_line))
+                self._unmatched_positions[(name, expected_line)] = (
+                    failure_position
+                )
                 if not have_some_match:
                     # Reset the scan, if we didn't have any previous
                     # match - maybe a later line will produce a partial match.
                     # But do not reset if we already have something matching,
                     # because that would defeat the "in order" assumption.
                     cursor = self.cursor()
+                    cursor_index = 0
+                    last_match_position = 0
 
     def optional(self, name: str, tolerated_lines: list[str]) -> None:
         """Those lines may exist and then they may appear anywhere
@@ -197,10 +221,14 @@ class Audit:
 
     def refused(self, name: str, refused_lines: list[str]) -> None:
         for refused_line in refused_lines:
-            for line in self.cursor():
+            for line_index, line in enumerate(self.cursor()):
                 if line.matches(refused_line):
                     line.mark(Status.REFUSED, name)
                     self.matched_refused.add((name, refused_line))
+                    # Store position (1-based line number)
+                    self._matched_refused_positions[(name, refused_line)] = (
+                        line_index + 1
+                    )
 
     def continuous(self, name: str, continuous_lines: list[str]) -> None:
         continuous_cursor = enumerate(continuous_lines)
@@ -280,10 +308,28 @@ class Audit:
                 return False
         return True
 
+    def _build_context(self, position: int) -> tuple[int, list[str]]:
+        """Build context around a position.
+
+        Returns (context_start, context_lines) where:
+        - context_start: 1-based line number of first context line
+        - context_lines: list of line contents (3 before + actual + 3 after)
+
+        Position is 1-based line number where the problem occurred.
+        """
+        # Convert to 0-based index
+        idx = position - 1
+        # 3 lines before, the line itself, 3 lines after
+        start = max(0, idx - 3)
+        end = min(len(self.content), idx + 4)  # +4 because slice is exclusive
+        context_start = start + 1  # Convert back to 1-based
+        context_lines = [self.content[i].data for i in range(start, end)]
+        return context_start, context_lines
+
     def to_json(self) -> dict[str, Any]:
         """Return structured JSON representation for agents/CI."""
         # Count by status
-        counts = {s: 0 for s in Status}
+        counts = dict.fromkeys(Status, 0)
         for line in self.content:
             counts[line.status] += 1
 
@@ -307,20 +353,52 @@ class Audit:
                 for i, line in enumerate(self.content)
             ],
             "unmatched_patterns": [
-                {
-                    "pattern": name,
-                    "expected_line": line_str,
-                }
+                self._build_unmatched_entry(name, line_str)
                 for name, line_str in self.unmatched_expectations
             ],
             "matched_refused": [
-                {
-                    "pattern": name,
-                    "refused_line": line_str,
-                }
+                self._build_matched_refused_entry(name, line_str)
                 for name, line_str in self.matched_refused
             ],
         }
+
+    def _build_unmatched_entry(
+        self, name: str, expected_line: str
+    ) -> dict[str, Any]:
+        """Build JSON entry for an unmatched pattern with context."""
+        entry: dict[str, Any] = {
+            "pattern": name,
+            "expected_line": expected_line,
+        }
+        position = self._unmatched_positions.get((name, expected_line))
+        if position is not None:
+            entry["actual_at_line"] = position
+            # Get actual line content at that position (if exists)
+            if 1 <= position <= len(self.content):
+                entry["actual_line"] = self.content[position - 1].data
+            # Build context
+            context_start, context_lines = self._build_context(position)
+            entry["context_start"] = context_start
+            entry["context_lines"] = context_lines
+        return entry
+
+    def _build_matched_refused_entry(
+        self, name: str, refused_line: str
+    ) -> dict[str, Any]:
+        """Build JSON entry for a matched refused pattern with context."""
+        entry: dict[str, Any] = {
+            "pattern": name,
+            "refused_line": refused_line,
+        }
+        position = self._matched_refused_positions.get((name, refused_line))
+        if position is not None:
+            entry["actual_at_line"] = position
+            if 1 <= position <= len(self.content):
+                entry["actual_line"] = self.content[position - 1].data
+            context_start, context_lines = self._build_context(position)
+            entry["context_start"] = context_start
+            entry["context_lines"] = context_lines
+        return entry
 
 
 def format_line_report(
