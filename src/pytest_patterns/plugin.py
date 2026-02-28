@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import enum
+import json
 import re
 from typing import Any, Iterator
 
@@ -12,15 +13,35 @@ def patterns() -> PatternsLib:
     return PatternsLib()
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Add --patterns-json flag for structured agent output."""
+    group = parser.getgroup("pytest-patterns")
+    group.addoption(
+        "--patterns-json",
+        action="store_true",
+        default=False,
+        help="Output pattern match results as JSON for agents/CI",
+    )
+
+
 def pytest_assertrepr_compare(
-    op: str, left: Any, right: Any
+    config: pytest.Config,
+    op: str,
+    left: Any,
+    right: Any,
 ) -> list[str] | None:
     if op != "==":
         return None
     if isinstance(left, Pattern):
-        return list(left._audit(right).report())
+        audit = left._audit(right)
+        if config.getoption("--patterns-json"):
+            return [json.dumps(audit.to_json(), indent=2)]
+        return list(audit.report())
     elif isinstance(right, Pattern):
-        return list(right._audit(left).report())
+        audit = right._audit(left)
+        if config.getoption("--patterns-json"):
+            return [json.dumps(audit.to_json(), indent=2)]
+        return list(audit.report())
     else:
         return None
 
@@ -258,6 +279,48 @@ class Audit:
             if line.status not in [Status.EXPECTED, Status.OPTIONAL]:
                 return False
         return True
+
+    def to_json(self) -> dict[str, Any]:
+        """Return structured JSON representation for agents/CI."""
+        # Count by status
+        counts = {s: 0 for s in Status}
+        for line in self.content:
+            counts[line.status] += 1
+
+        return {
+            "status": "passed" if self.is_ok() else "failed",
+            "summary": {
+                "total_lines": len(self.content),
+                "expected": counts[Status.EXPECTED],
+                "optional": counts[Status.OPTIONAL],
+                "unexpected": counts[Status.UNEXPECTED],
+                "refused": counts[Status.REFUSED],
+                "unmatched": len(self.unmatched_expectations),
+            },
+            "lines": [
+                {
+                    "number": i + 1,
+                    "content": line.data,
+                    "status": line.status.name.lower(),
+                    "pattern": line.status_cause or None,
+                }
+                for i, line in enumerate(self.content)
+            ],
+            "unmatched_patterns": [
+                {
+                    "pattern": name,
+                    "expected_line": line_str,
+                }
+                for name, line_str in self.unmatched_expectations
+            ],
+            "matched_refused": [
+                {
+                    "pattern": name,
+                    "refused_line": line_str,
+                }
+                for name, line_str in self.matched_refused
+            ],
+        }
 
 
 def format_line_report(
