@@ -15,14 +15,12 @@ license = "MIT"
 authors = [
   { name = "Christian Theune", email = "ct@flyingcircus.io" },
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Framework :: Pytest",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -62,7 +60,7 @@ COV_CORE_DATAFILE=".coverage.eager"
 test = "pytest {args:tests}"
 
 [[tool.hatch.envs.all.matrix]]
-python = ["3.7", "3.8", "3.9", "3.10", "3.11"]
+python = ["3.9", "3.10", "3.11", "3.12"]
 
 [tool.hatch.envs.lint]
 detached = true
@@ -89,12 +87,12 @@ all = [
 ]
 
 [tool.black]
-target-version = ["py38"]
+target-version = ["py39"]
 line-length = 80
 skip-string-normalization = true
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py39"
 line-length = 80
 
 [tool.ruff.lint]
@@ -174,7 +172,7 @@ exclude_lines = [
 
 [tool.mypy]
 strict=true
-python_version = "3.8"
+python_version = "3.9"
 
 [dependency-groups]
 test = [
