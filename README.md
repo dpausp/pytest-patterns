@@ -86,7 +86,7 @@ and marked with a yellow circle (🟡).
 We know the Zen is correct the way it is, so lets use more of the API to continue
 completing the pattern.
 
-## `continous` matches
+## `continuous` matches
 
 Lets use the `continuous` match which requires lines to come both in a specific order
 and must not be interrupted by other lines. We create a new named pattern and
@@ -97,7 +97,7 @@ def test_zen(patterns):
     ...
 
     p = patterns.conclusio
-    p.continous("""
+    p.continuous("""
 If the implementation is hard to explain, it's a bad idea.
 If the implementation is easy to explain, it may be a good idea.
 Namespaces are one honking great idea -- let's do more of those!
@@ -374,13 +374,56 @@ prefix> aligned text
     assert tabs == data
 ```
 
-# Development
+## Generating example output
 
+If you want to see what text would match a pattern, use `generate_example()`:
+
+```python
+def test_example(patterns):
+    p = patterns.example
+    p.optional("...error...")
+    p.in_order("status: ok")
+
+    example = p.generate_example()
+    # Returns: "[...]error[...]\nstatus: ok"
+```
+
+Wildcards are replaced with placeholders:
+- `...` → `[...]`
+- `<empty-line>` → (empty string)
+
+## JSON output for CI/automation
+
+Use `--patterns-json` flag to get structured JSON output instead of human-readable format:
+
+```shell
+$ pytest --patterns-json tests/
+```
+
+The JSON output includes:
+- `status`: "passed" or "failed"
+- `summary`: counts by category (expected, optional, unexpected, refused, unmatched)
+- `lines`: per-line breakdown with status and pattern names
+- `unmatched_patterns`: expected patterns that didn't match, with context
+- `matched_refused`: refused patterns that matched (failures)
+
+You can also call `to_json()` programmatically on the audit object.
+
+# Development
 
 ```shell
 $ pre-commit install
 $ nix develop
-$ hatch run test
+$ tox            # Run all test environments (3.10-3.14)
+$ tox -e fix     # Format, lint, and type-check
+$ tox -e cov     # Run tests with coverage
+```
+
+Or using hatch:
+```shell
+$ hatch run test          # Run tests
+$ hatch run fmt           # Format and lint
+$ hatch run all           # All linting + type checking
 ```
 
 
@@ -413,7 +456,7 @@ $ hatch run test
 
 * [ ] optional reporting without colors
 
-* [ ] matrix builds for multiple python versions / use tox locally and in github action?
+* [x] matrix builds for multiple python versions / use tox locally and in github action
 
 * [ ] highlight whitespace (e.g. <TAB> <SPACE> ) when reporting unmatched expected lines. this can be confusing if you see an "empty" line because you typoed e.g.:
 
