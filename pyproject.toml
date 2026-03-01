@@ -96,6 +96,8 @@ skip-string-normalization = true
 [tool.ruff]
 target-version = "py38"
 line-length = 80
+
+[tool.ruff.lint]
 select = [
   "A",
   "ARG",
@@ -140,20 +142,16 @@ unfixable = [
   "F401",
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["pytest_patterns"]
 
-[tool.ruff.flake8-tidy-imports]
+[tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
 # F401: pytest imported for fixtures (false positive)
 "tests/**/*" = ["PLR2004", "S101", "TID252", "F401"]
-
-[tool.isort]
-profile = "black"
-line_length = 80
 
 [tool.coverage.run]
 source_pkgs = ["pytest_patterns", "tests"]
