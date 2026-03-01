@@ -66,7 +66,6 @@ python = ["3.9", "3.10", "3.11", "3.12"]
 detached = true
 dependencies = [
   "pytest>=6",
-  "black>=23.1.0",
   "mypy>=1.0.0",
   "ruff>=0.0.243",
 ]
@@ -74,11 +73,10 @@ dependencies = [
 typing = "mypy {args:src/pytest_patterns tests}"
 style = [
   "ruff {args:.}",
-  "black --check --diff {args:.}",
 ]
 fmt = [
-  "black {args:.}",
-  "ruff --fix {args:.}",
+  "ruff format {args:.}",
+  "ruff check --fix {args:.}",
   "style",
 ]
 all = [
@@ -86,14 +84,12 @@ all = [
   "typing",
 ]
 
-[tool.black]
-target-version = ["py39"]
-line-length = 80
-skip-string-normalization = true
-
 [tool.ruff]
 target-version = "py39"
 line-length = 80
+
+[tool.ruff.format]
+quote-style = "preserve"
 
 [tool.ruff.lint]
 select = [
@@ -176,5 +172,46 @@ python_version = "3.9"
 
 [dependency-groups]
 test = [
-    "pytest-cov>=4.1.0",
+    "pytest-cov",
+    "pytest-xdist",
+]
+lint = [
+    "ruff",
+    "mypy>=1.0.0",
+]
+dev = [
+    {include-group = "test"},
+    {include-group = "lint"},
+    "tox",
+    "tox-uv",
+    "pyproject-fmt>=2.5.0",
+]
+
+[tool.tox]
+env_list = ["fix", "cov", "3.9", "3.10", "3.11", "3.12"]
+skip_missing_interpreters = true
+
+[tool.tox.env_run_base]
+package = "wheel"
+dependency_groups = ["test"]
+commands = [["pytest", { replace = "posargs", extend = true }]]
+
+[tool.tox.env.fix]
+skip_install = true
+depends = []
+description = "Format, lint, and type-check"
+dependency_groups = ["test", "lint"]
+commands = [
+    ["ruff", "check", "--fix", "."],
+    ["ruff", "format", "."],
+    ["mypy", "src/pytest_patterns", "tests"],
+]
+
+[tool.tox.env.cov]
+base_python = ["3.12"]
+package = "wheel"
+dependency_groups = ["test"]
+description = "Tests with coverage"
+commands = [
+    ["pytest", "--cov=pytest_patterns", "--cov-report=term-missing", "--cov-report=html"],
 ]

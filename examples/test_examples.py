@@ -1,5 +1,6 @@
-import pytest
 import this
+
+import pytest
 
 zen = "".join([this.d.get(c, c) for c in this.s])
 
