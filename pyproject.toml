@@ -130,6 +130,8 @@ ignore = [
   "S105", "S106", "S107",
   # Ignore complexity
   "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+  # Pattern class is intentionally mutable (has __eq__ but no __hash__)
+  "PLW1641",
 ]
 unfixable = [
   # Don't touch unused imports
@@ -145,7 +147,8 @@ ban-relative-imports = "all"
 [tool.ruff.lint.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
 # F401: pytest imported for fixtures (false positive)
-"tests/**/*" = ["PLR2004", "S101", "TID252", "F401"]
+# PLC0415: imports inside test functions for isolation
+"tests/**/*" = ["PLR2004", "S101", "TID252", "F401", "PLC0415"]
 
 [tool.coverage.run]
 source_pkgs = ["pytest_patterns", "tests"]

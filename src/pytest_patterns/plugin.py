@@ -373,7 +373,7 @@ class Audit:
         }
 
     def _build_unmatched_entry(
-        self, name: str, expected_line: str, is_primary: bool = True
+        self, name: str, expected_line: str, *, is_primary: bool = True
     ) -> dict[str, Any]:
         """Build JSON entry for an unmatched pattern with context."""
         entry: dict[str, Any] = {
