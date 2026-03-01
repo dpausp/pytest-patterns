@@ -479,6 +479,36 @@ class Pattern:
             getattr(audit, op)(*args)
         return audit
 
+    def generate_example(self) -> str:
+        """Generate example text that matches this pattern.
+
+        Simple placeholder strategy:
+        - ... → [...]
+        - <empty-line> → (empty string)
+        - refused patterns are ignored
+        """
+        lines = []
+
+        for op, _name, pattern_lines in self.flat_ops():
+            if op == "refused":
+                # Skip refused patterns (Option A: ignore)
+                continue
+
+            for pattern_line in pattern_lines:
+                replaced = self._replace_wildcards(pattern_line)
+                lines.append(replaced)
+
+        return "\n".join(lines)
+
+    def _replace_wildcards(self, line: str) -> str:
+        """Replace wildcards with simple placeholders."""
+        # <empty-line> → empty string
+        if line == EMPTY_LINE_PATTERN:
+            return ""
+        # ... → [...]
+        line = line.replace("...", "[...]")
+        return line
+
     def __eq__(self, other: object) -> bool:
         assert isinstance(other, str)
         audit = self._audit(other)

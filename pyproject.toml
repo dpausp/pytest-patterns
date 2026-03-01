@@ -148,7 +148,8 @@ ban-relative-imports = "all"
 
 [tool.ruff.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
-"tests/**/*" = ["PLR2004", "S101", "TID252"]
+# F401: pytest imported for fixtures (false positive)
+"tests/**/*" = ["PLR2004", "S101", "TID252", "F401"]
 
 [tool.isort]
 profile = "black"
