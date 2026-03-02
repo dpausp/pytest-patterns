@@ -3,6 +3,7 @@ from __future__ import annotations
 import enum
 import json
 import re
+import sys
 from collections.abc import Iterator
 from typing import Any
 
@@ -37,12 +38,22 @@ def pytest_assertrepr_compare(
         audit = left._audit(right)
         if config.getoption("--patterns-json"):
             return [json.dumps(audit.to_json(), indent=2)]
-        return list(audit.report())
+        report_lines = list(audit.report())
+        # Print full report to stderr (skip summary line, avoids truncation)
+        for line in report_lines[1:]:
+            print(line, file=sys.stderr)
+        # Return only summary for assertion explanation
+        return [report_lines[0]] if report_lines else None
     elif isinstance(right, Pattern):
         audit = right._audit(left)
         if config.getoption("--patterns-json"):
             return [json.dumps(audit.to_json(), indent=2)]
-        return list(audit.report())
+        report_lines = list(audit.report())
+        # Print full report to stderr (skip summary line, avoids truncation)
+        for line in report_lines[1:]:
+            print(line, file=sys.stderr)
+        # Return only summary for assertion explanation
+        return [report_lines[0]] if report_lines else None
     else:
         return None
 
