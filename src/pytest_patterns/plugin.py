@@ -67,6 +67,61 @@ STATUS_SYMBOLS = {
 
 EMPTY_LINE_PATTERN = "<empty-line>"
 
+# ANSI codes for whitespace highlighting
+YELLOW_BG = "\x1b[43m"
+RESET = "\x1b[0m"
+
+
+def describe_whitespace(line: str) -> str | None:
+    """Describe whitespace issue in a line, if any.
+
+    Returns None if no whitespace issue, otherwise a description like:
+    - "4 spaces" (whitespace-only line)
+    - "trailing 2 spaces" (line with trailing whitespace)
+    - "2 spaces + 1 tab" (mixed whitespace)
+    """
+    # Empty line is not a whitespace issue
+    if not line:
+        return None
+
+    # Check for whitespace-only line
+    if not line.strip():
+        return _describe_whitespace_components(line, "")
+
+    # Check for trailing whitespace
+    stripped = line.rstrip()
+    if stripped != line:
+        trailing = line[len(stripped) :]
+        return _describe_whitespace_components(trailing, "trailing ")
+
+    return None
+
+
+def _describe_whitespace_components(ws: str, prefix: str) -> str:
+    """Build description like '4 spaces' or '2 spaces + 1 tab + 2 spaces'."""
+    if not ws:
+        return ""
+
+    components: list[str] = []
+    i = 0
+    while i < len(ws):
+        char = ws[i]
+        count = 1
+        while i + count < len(ws) and ws[i + count] == char:
+            count += 1
+
+        if char == " ":
+            components.append(f"{count} space{'s' if count != 1 else ''}")
+        elif char == "\t":
+            components.append(f"{count} tab{'s' if count != 1 else ''}")
+        else:
+            # Other whitespace (shouldn't happen often)
+            components.append(f"{count} {char!r}")
+
+        i += count
+
+    return prefix + " + ".join(components)
+
 
 def tab_replace(line: str) -> str:
     while (position := line.find("\t")) != -1:
@@ -300,6 +355,38 @@ class Audit:
                 yield format_line_report(
                     Status.REFUSED, Status.REFUSED.symbol, name, line_str
                 )
+        # Whitespace warning section
+        ws_issues = self._collect_whitespace_issues()
+        if ws_issues:
+            yield ""
+            yield "⚠️  Whitespace issues detected:"
+            yield ""
+            for line_no, description in ws_issues:
+                yield f"   Line {line_no}: {description}"
+
+    def _collect_whitespace_issues(self) -> list[tuple[int, str]]:
+        """Collect whitespace issues from unexpected content lines.
+
+        Returns list of (line_number, description) tuples.
+        """
+        issues: list[tuple[int, str]] = []
+
+        # Check unexpected content lines
+        for i, line in enumerate(self.content):
+            if line.status == Status.UNEXPECTED:
+                ws_desc = describe_whitespace(line.data)
+                if ws_desc:
+                    issues.append((i + 1, ws_desc))  # 1-based line number
+
+        # Check unmatched expected lines
+        for name, expected_line in self.unmatched_expectations:
+            ws_desc = describe_whitespace(expected_line)
+            if ws_desc:
+                # Find position if available
+                pos = self._unmatched_positions.get((name, expected_line), 0)
+                issues.append((pos, f"expected '{expected_line}' [{ws_desc}]"))
+
+        return issues
 
     def is_ok(self) -> bool:
         if self.unmatched_expectations:
@@ -419,6 +506,17 @@ def format_line_report(
     line: str,
 ) -> str:
     if status not in [Status.EXPECTED, Status.OPTIONAL]:
+        # Check for whitespace issues in unexpected/refused lines
+        ws_issue = describe_whitespace(line)
+        if ws_issue:
+            # Apply yellow background and annotation
+            highlighted = (
+                YELLOW_BG
+                + line_to_control_pictures(line)
+                + RESET
+                + f"  [{ws_issue}]"
+            )
+            return symbol + " " + cause.ljust(15)[:15] + " | " + highlighted
         line = line_to_control_pictures(line)
     return symbol + " " + cause.ljust(15)[:15] + " | " + line
 
