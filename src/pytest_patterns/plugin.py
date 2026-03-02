@@ -371,7 +371,7 @@ class Audit:
             else:
                 for name in sorted(refused_names):
                     failures.append(
-                        f"[{name}]: {counts[Status.REFUSED]} refused"
+                        f"[{name}] - {counts[Status.REFUSED]} refused"
                     )
         if self.unmatched_expectations:
             if is_single_pattern:
@@ -379,7 +379,7 @@ class Audit:
             else:
                 for name in sorted(unmatched_names):
                     failures.append(
-                        f"[{name}]: {len(self.unmatched_expectations)} unmatched"
+                        f"[{name}] - {len(self.unmatched_expectations)} unmatched"
                     )
         if counts[Status.UNEXPECTED] > 0:
             failures.append(f"{counts[Status.UNEXPECTED]} unexpected")
