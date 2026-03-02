@@ -174,7 +174,7 @@ END:VCALENDAR\r
     report = list(audit.report())
     assert (
         extract_summary(report)
-        == "Pattern mismatch [schedule]: 71 unexpected, 71 unmatched."
+        == "Pattern mismatch: 71 unexpected, 71 unmatched (schedule)."
     )
     assert strip_summary(report) == [
         *GENERIC_HEADER,

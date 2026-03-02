@@ -331,39 +331,48 @@ class Audit:
 
     def _build_summary(self) -> str:
         """Build informative summary line with pattern names and counts."""
-        # Collect pattern names from all sources
-        pattern_names: set[str] = set()
+        # Collect pattern names by failure type
+        refused_names: set[str] = set()
+        unmatched_names: set[str] = set()
+
         for line in self.content:
-            if line.status_cause:
-                pattern_names.add(line.status_cause)
+            if line.status == Status.REFUSED and line.status_cause:
+                refused_names.add(line.status_cause)
         for name, _ in self.unmatched_expectations:
-            pattern_names.add(name)
+            unmatched_names.add(name)
         for name, _ in self.matched_refused:
-            pattern_names.add(name)
+            refused_names.add(name)
 
         # Count by status
         counts = dict.fromkeys(Status, 0)
         for line in self.content:
             counts[line.status] += 1
 
-        # Build parts
+        # Build parts with pattern names
         parts: list[str] = []
         if counts[Status.UNEXPECTED] > 0:
             parts.append(f"{counts[Status.UNEXPECTED]} unexpected")
         if counts[Status.REFUSED] > 0:
-            parts.append(f"{counts[Status.REFUSED]} refused")
+            if refused_names:
+                sorted_refused = sorted(refused_names)
+                parts.append(
+                    f"{counts[Status.REFUSED]} refused ({', '.join(sorted_refused)})"
+                )
+            else:
+                parts.append(f"{counts[Status.REFUSED]} refused")
         if self.unmatched_expectations:
-            parts.append(f"{len(self.unmatched_expectations)} unmatched")
+            if unmatched_names:
+                sorted_unmatched = sorted(unmatched_names)
+                parts.append(
+                    f"{len(self.unmatched_expectations)} unmatched ({', '.join(sorted_unmatched)})"
+                )
+            else:
+                parts.append(f"{len(self.unmatched_expectations)} unmatched")
 
         if not parts:
             return "String did not meet the expectations."
 
-        summary = "Pattern mismatch"
-        if pattern_names:
-            sorted_names = sorted(pattern_names)
-            summary += f" [{', '.join(sorted_names)}]"
-        summary += f": {', '.join(parts)}."
-        return summary
+        return f"Pattern mismatch: {', '.join(parts)}."
 
     def report(self) -> Iterator[str]:
         yield self._build_summary()
