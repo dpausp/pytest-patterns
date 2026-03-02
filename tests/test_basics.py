@@ -222,7 +222,7 @@ Line 1
     report = list(audit.report())
     assert (
         extract_summary(report)
-        == "Pattern [in_order] mismatch: 4 unmatched; 4 unexpected."
+        == "Pattern [in_order] mismatch: 4 unexpected; 4 unmatched."
     )
     assert strip_summary(report) == [
         *GENERIC_HEADER,
@@ -313,7 +313,7 @@ asdf
     report = list(audit.report())
     assert (
         extract_summary(report)
-        == "Pattern [focus] mismatch: 1 refused; 3 unmatched; 4 unexpected."
+        == "Pattern [focus] mismatch: 4 unexpected; 1 refused; 3 unmatched."
     )
     assert strip_summary(report) == [
         *GENERIC_HEADER,
@@ -356,7 +356,7 @@ There is no first line
     report = list(audit.report())
     assert (
         extract_summary(report)
-        == "Pattern [focus] mismatch: 2 unmatched; 2 unexpected."
+        == "Pattern [focus] mismatch: 2 unexpected; 2 unmatched."
     )
     assert strip_summary(report) == [
         *GENERIC_HEADER,

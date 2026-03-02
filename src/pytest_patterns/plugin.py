@@ -365,6 +365,9 @@ class Audit:
             next(iter(all_names)) if is_single_pattern else None
         )
 
+        # Unexpected first (not pattern-specific)
+        if counts[Status.UNEXPECTED] > 0:
+            failures.append(f"{counts[Status.UNEXPECTED]} unexpected")
         if counts[Status.REFUSED] > 0:
             if is_single_pattern:
                 failures.append(f"{counts[Status.REFUSED]} refused")
@@ -381,8 +384,6 @@ class Audit:
                     failures.append(
                         f"[{name}] - {len(self.unmatched_expectations)} unmatched"
                     )
-        if counts[Status.UNEXPECTED] > 0:
-            failures.append(f"{counts[Status.UNEXPECTED]} unexpected")
 
         if not failures:
             return "String did not meet the expectations."
