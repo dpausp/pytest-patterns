@@ -185,7 +185,7 @@ This is an expected line
     )
     report = list(audit.report())
     assert (
-        extract_summary(report) == "Pattern mismatch: 1 unmatched (in_order)."
+        extract_summary(report) == "Pattern [in_order] mismatch: 1 unmatched."
     )
     assert strip_summary(report) == [
         *GENERIC_HEADER,
@@ -222,7 +222,7 @@ Line 1
     report = list(audit.report())
     assert (
         extract_summary(report)
-        == "Pattern mismatch: 4 unexpected, 4 unmatched (in_order)."
+        == "Pattern [in_order] mismatch: 4 unmatched; 4 unexpected."
     )
     assert strip_summary(report) == [
         *GENERIC_HEADER,
@@ -248,7 +248,7 @@ def test_refused_lines_fail(patterns: PatternsLib) -> None:
 
     audit = pattern._audit("This is a refused line")
     report = list(audit.report())
-    assert extract_summary(report) == "Pattern mismatch: 1 refused (refused)."
+    assert extract_summary(report) == "Pattern [refused] mismatch: 1 refused."
     assert strip_summary(report) == [
         *GENERIC_HEADER,
         "🔴 refused         | This␠is␠a␠refused␠line",
@@ -313,7 +313,7 @@ asdf
     report = list(audit.report())
     assert (
         extract_summary(report)
-        == "Pattern mismatch: 4 unexpected, 1 refused (focus), 3 unmatched (focus)."
+        == "Pattern [focus] mismatch: 1 refused; 3 unmatched; 4 unexpected."
     )
     assert strip_summary(report) == [
         *GENERIC_HEADER,
@@ -356,7 +356,7 @@ There is no first line
     report = list(audit.report())
     assert (
         extract_summary(report)
-        == "Pattern mismatch: 2 unexpected, 2 unmatched (focus)."
+        == "Pattern [focus] mismatch: 2 unmatched; 2 unexpected."
     )
     assert strip_summary(report) == [
         *GENERIC_HEADER,

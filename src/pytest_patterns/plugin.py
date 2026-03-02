@@ -331,6 +331,16 @@ class Audit:
 
     def _build_summary(self) -> str:
         """Build informative summary line with pattern names and counts."""
+        # Collect all pattern names
+        all_names: set[str] = set()
+        for line in self.content:
+            if line.status_cause:
+                all_names.add(line.status_cause)
+        for name, _ in self.unmatched_expectations:
+            all_names.add(name)
+        for name, _ in self.matched_refused:
+            all_names.add(name)
+
         # Collect pattern names by failure type
         refused_names: set[str] = set()
         unmatched_names: set[str] = set()
@@ -348,31 +358,42 @@ class Audit:
         for line in self.content:
             counts[line.status] += 1
 
-        # Build parts with pattern names
-        parts: list[str] = []
-        if counts[Status.UNEXPECTED] > 0:
-            parts.append(f"{counts[Status.UNEXPECTED]} unexpected")
-        if counts[Status.REFUSED] > 0:
-            if refused_names:
-                sorted_refused = sorted(refused_names)
-                parts.append(
-                    f"{counts[Status.REFUSED]} refused ({', '.join(sorted_refused)})"
-                )
-            else:
-                parts.append(f"{counts[Status.REFUSED]} refused")
-        if self.unmatched_expectations:
-            if unmatched_names:
-                sorted_unmatched = sorted(unmatched_names)
-                parts.append(
-                    f"{len(self.unmatched_expectations)} unmatched ({', '.join(sorted_unmatched)})"
-                )
-            else:
-                parts.append(f"{len(self.unmatched_expectations)} unmatched")
+        # Build failure details
+        failures: list[str] = []
+        is_single_pattern = len(all_names) == 1
+        single_pattern_name = (
+            next(iter(all_names)) if is_single_pattern else None
+        )
 
-        if not parts:
+        if counts[Status.REFUSED] > 0:
+            if is_single_pattern:
+                failures.append(f"{counts[Status.REFUSED]} refused")
+            else:
+                for name in sorted(refused_names):
+                    failures.append(
+                        f"[{name}]: {counts[Status.REFUSED]} refused"
+                    )
+        if self.unmatched_expectations:
+            if is_single_pattern:
+                failures.append(f"{len(self.unmatched_expectations)} unmatched")
+            else:
+                for name in sorted(unmatched_names):
+                    failures.append(
+                        f"[{name}]: {len(self.unmatched_expectations)} unmatched"
+                    )
+        if counts[Status.UNEXPECTED] > 0:
+            failures.append(f"{counts[Status.UNEXPECTED]} unexpected")
+
+        if not failures:
             return "String did not meet the expectations."
 
-        return f"Pattern mismatch: {', '.join(parts)}."
+        if all_names:
+            sorted_names = sorted(all_names)
+            pattern_part = f"Pattern [{', '.join(sorted_names)}]"
+            if is_single_pattern:
+                return f"{pattern_part} mismatch: {'; '.join(failures)}."
+            return f"{pattern_part} mismatch. {'; '.join(failures)}."
+        return f"Pattern mismatch: {'; '.join(failures)}."
 
     def report(self) -> Iterator[str]:
         yield self._build_summary()
