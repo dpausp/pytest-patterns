@@ -389,10 +389,7 @@ class Audit:
 
         if all_names:
             sorted_names = sorted(all_names)
-            pattern_part = f"Pattern [{', '.join(sorted_names)}]"
-            if is_single_pattern:
-                return f"{pattern_part} mismatch: {'; '.join(failures)}."
-            return f"{pattern_part} mismatch. {'; '.join(failures)}."
+            return f"Pattern [{', '.join(sorted_names)}] mismatch: {'; '.join(failures)}."
         return f"Pattern mismatch: {'; '.join(failures)}."
 
     def report(self) -> Iterator[str]:
