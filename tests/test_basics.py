@@ -3,13 +3,22 @@ import pytest
 from pytest_patterns.plugin import PatternsLib
 
 GENERIC_HEADER = [
-    "String did not meet the expectations.",
-    "",
+    "",  # Summary line (dynamic, tested separately)
     "🟢=EXPECTED | ⚪️=OPTIONAL | 🟡=UNEXPECTED | 🔴=REFUSED/UNMATCHED",
     "",
     "Here is the string that was tested: ",
     "",
 ]
+
+
+def extract_summary(report_lines: list[str]) -> str:
+    """Extract the first line (summary) from a report."""
+    return report_lines[0] if report_lines else ""
+
+
+def strip_summary(report_lines: list[str]) -> list[str]:
+    """Remove the dynamic summary line for comparison."""
+    return report_lines[1:] if report_lines else []
 
 
 def test_tab_replace() -> None:
@@ -37,13 +46,17 @@ def test_empty_pattern_empty_string_is_ok(patterns: PatternsLib) -> None:
     # no content, then there is no unexpected content and if you didn't expect
     # any content then there is none missing, so we fall through.
     audit = patterns.nothing._audit("")
-    assert list(audit.report()) == GENERIC_HEADER
+    report = list(audit.report())
+    assert extract_summary(report) == "String did not meet the expectations."
+    assert strip_summary(report) == GENERIC_HEADER
     assert audit.is_ok()
 
 
 def test_unexpected_lines_fail(patterns: PatternsLib) -> None:
     audit = patterns.nothing._audit("This is an unexpected line")
-    assert list(audit.report()) == [
+    report = list(audit.report())
+    assert extract_summary(report) == "Pattern mismatch: 1 unexpected."
+    assert strip_summary(report) == [
         *GENERIC_HEADER,
         "🟡                 | This␠is␠an␠unexpected␠line",
     ]
@@ -56,7 +69,9 @@ def test_empty_lines_do_not_match(patterns: PatternsLib) -> None:
         """
 """
     )
-    assert list(audit.report()) == [
+    report = list(audit.report())
+    assert extract_summary(report) == "Pattern mismatch: 1 unexpected."
+    assert strip_summary(report) == [
         *GENERIC_HEADER,
         "🟡                 | ",
     ]
@@ -71,7 +86,9 @@ def test_empty_lines_match_special_marker(patterns: PatternsLib) -> None:
 <empty-line>
 """
     )
-    assert list(audit.report()) == [
+    report = list(audit.report())
+    assert extract_summary(report) == "String did not meet the expectations."
+    assert strip_summary(report) == [
         *GENERIC_HEADER,
         "⚪️ empty           | ",
         "⚪️ empty           | ",
@@ -141,7 +158,9 @@ This is from another match
 This is a second expected line"""
     )
 
-    assert list(audit.report()) == [
+    report = list(audit.report())
+    assert extract_summary(report) == "String did not meet the expectations."
+    assert strip_summary(report) == [
         *GENERIC_HEADER,
         "🟢 in_order        | This is a first expected line",
         "⚪️ in_order        | This is from another match",
@@ -164,7 +183,11 @@ This is also an expected line
 This is an expected line
 """
     )
-    assert list(audit.report()) == [
+    report = list(audit.report())
+    assert (
+        extract_summary(report) == "Pattern mismatch [in_order]: 1 unmatched."
+    )
+    assert strip_summary(report) == [
         *GENERIC_HEADER,
         "🟢 in_order        | This is an expected line",
         "",
@@ -196,7 +219,12 @@ Line 2
 Line 1
 """
     )
-    assert list(audit.report()) == [
+    report = list(audit.report())
+    assert (
+        extract_summary(report)
+        == "Pattern mismatch [in_order]: 4 unexpected, 4 unmatched."
+    )
+    assert strip_summary(report) == [
         *GENERIC_HEADER,
         "🟡                 | Line␠5",
         "🟡                 | Line␠4",
@@ -219,7 +247,9 @@ def test_refused_lines_fail(patterns: PatternsLib) -> None:
     pattern.refused("This is a refused line")
 
     audit = pattern._audit("This is a refused line")
-    assert list(audit.report()) == [
+    report = list(audit.report())
+    assert extract_summary(report) == "Pattern mismatch [refused]: 1 refused."
+    assert strip_summary(report) == [
         *GENERIC_HEADER,
         "🔴 refused         | This␠is␠a␠refused␠line",
         "",
@@ -254,7 +284,9 @@ interrupted
 asdf
 """
     )
-    assert list(audit.report()) == [
+    report = list(audit.report())
+    assert extract_summary(report) == "String did not meet the expectations."
+    assert strip_summary(report) == [
         *GENERIC_HEADER,
         "⚪️ focus           | asdf",
         "🟢 focus           | These lines",
@@ -278,7 +310,12 @@ interrupted
 asdf
 """
     )
-    assert list(audit.report()) == [
+    report = list(audit.report())
+    assert (
+        extract_summary(report)
+        == "Pattern mismatch [focus]: 4 unexpected, 1 refused, 3 unmatched."
+    )
+    assert strip_summary(report) == [
         *GENERIC_HEADER,
         "⚪️ focus           | asdf",
         "🟢 focus           | These lines",
@@ -316,7 +353,12 @@ Not the first line
 There is no first line
 """
     )
-    assert list(audit.report()) == [
+    report = list(audit.report())
+    assert (
+        extract_summary(report)
+        == "Pattern mismatch [focus]: 2 unexpected, 2 unmatched."
+    )
+    assert strip_summary(report) == [
         *GENERIC_HEADER,
         "🟡                 | Not␠the␠first␠line",
         "🟡                 | There␠is␠no␠first␠line",
@@ -339,7 +381,9 @@ def test_optional(patterns: PatternsLib) -> None:
 ping
 """
     )
-    assert list(audit.report()) == [
+    report = list(audit.report())
+    assert extract_summary(report) == "String did not meet the expectations."
+    assert strip_summary(report) == [
         *GENERIC_HEADER,
         "⚪️ optional        | ping",
     ]

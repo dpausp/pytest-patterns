@@ -3,13 +3,22 @@ from pathlib import Path
 from pytest_patterns.plugin import PatternsLib
 
 GENERIC_HEADER = [
-    "String did not meet the expectations.",
-    "",
+    "",  # Summary line (dynamic, tested separately)
     "🟢=EXPECTED | ⚪️=OPTIONAL | 🟡=UNEXPECTED | 🔴=REFUSED/UNMATCHED",
     "",
     "Here is the string that was tested: ",
     "",
 ]
+
+
+def extract_summary(report_lines: list[str]) -> str:
+    """Extract the first line (summary) from a report."""
+    return report_lines[0] if report_lines else ""
+
+
+def strip_summary(report_lines: list[str]) -> list[str]:
+    """Remove the dynamic summary line for comparison."""
+    return report_lines[1:] if report_lines else []
 
 
 def test_ical_ordering_produces_reasonable_reports(
@@ -162,7 +171,12 @@ END:VCALENDAR\r
     )
 
     audit = p._audit(test_data)
-    assert list(audit.report()) == [
+    report = list(audit.report())
+    assert (
+        extract_summary(report)
+        == "Pattern mismatch [schedule]: 71 unexpected, 71 unmatched."
+    )
+    assert strip_summary(report) == [
         *GENERIC_HEADER,
         "🟢 schedule        | BEGIN:VCALENDAR",
         "🟢 schedule        | VERSION:2.0",
