@@ -55,7 +55,7 @@ def test_empty_pattern_empty_string_is_ok(patterns: PatternsLib) -> None:
 def test_unexpected_lines_fail(patterns: PatternsLib) -> None:
     audit = patterns.nothing._audit("This is an unexpected line")
     report = list(audit.report())
-    assert extract_summary(report) == "Pattern mismatch: 1 unexpected."
+    assert extract_summary(report) == "Pattern: 1 unexpected."
     assert strip_summary(report) == [
         *GENERIC_HEADER,
         "🟡                 | This␠is␠an␠unexpected␠line",
@@ -70,7 +70,7 @@ def test_empty_lines_do_not_match(patterns: PatternsLib) -> None:
 """
     )
     report = list(audit.report())
-    assert extract_summary(report) == "Pattern mismatch: 1 unexpected."
+    assert extract_summary(report) == "Pattern: 1 unexpected."
     assert strip_summary(report) == [
         *GENERIC_HEADER,
         "🟡                 | ",
@@ -185,7 +185,7 @@ This is an expected line
     )
     report = list(audit.report())
     assert (
-        extract_summary(report) == "Pattern [in_order] mismatch: 1 unmatched."
+        extract_summary(report) == "Pattern [in_order]: 1 unmatched."
     )
     assert strip_summary(report) == [
         *GENERIC_HEADER,
@@ -222,7 +222,7 @@ Line 1
     report = list(audit.report())
     assert (
         extract_summary(report)
-        == "Pattern [in_order] mismatch: 4 unexpected; 4 unmatched."
+        == "Pattern [in_order]: 4 unexpected; 4 unmatched."
     )
     assert strip_summary(report) == [
         *GENERIC_HEADER,
@@ -248,7 +248,7 @@ def test_refused_lines_fail(patterns: PatternsLib) -> None:
 
     audit = pattern._audit("This is a refused line")
     report = list(audit.report())
-    assert extract_summary(report) == "Pattern [refused] mismatch: 1 refused."
+    assert extract_summary(report) == "Pattern [refused]: 1 refused."
     assert strip_summary(report) == [
         *GENERIC_HEADER,
         "🔴 refused         | This␠is␠a␠refused␠line",
@@ -313,7 +313,7 @@ asdf
     report = list(audit.report())
     assert (
         extract_summary(report)
-        == "Pattern [focus] mismatch: 4 unexpected; 1 refused; 3 unmatched."
+        == "Pattern [focus]: 4 unexpected; 1 refused; 3 unmatched."
     )
     assert strip_summary(report) == [
         *GENERIC_HEADER,
@@ -356,7 +356,7 @@ There is no first line
     report = list(audit.report())
     assert (
         extract_summary(report)
-        == "Pattern [focus] mismatch: 2 unexpected; 2 unmatched."
+        == "Pattern [focus]: 2 unexpected; 2 unmatched."
     )
     assert strip_summary(report) == [
         *GENERIC_HEADER,

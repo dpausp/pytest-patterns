@@ -84,11 +84,11 @@ def test_format_line_report_expected_line_no_annotation() -> None:
     assert "[4 spaces]" not in result
 
 
-def test_format_line_report_yellow_background_applied() -> None:
-    """Whitespace-only lines get yellow background ANSI code."""
+def test_format_line_report_gray_background_applied() -> None:
+    """Whitespace-only lines get gray background ANSI code."""
     result = format_line_report(Status.UNEXPECTED, "🟡", "", "    ")
-    # Yellow background: \x1b[43m, Reset: \x1b[0m
-    assert "\x1b[43m" in result
+    # Gray background: \x1b[100m, Reset: \x1b[0m
+    assert "\x1b[100m" in result
     assert "\x1b[0m" in result
 
 

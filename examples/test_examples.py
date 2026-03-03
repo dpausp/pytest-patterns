@@ -298,3 +298,34 @@ def test_zen_7(patterns, zen_patterns):
     full_pattern.merge("better_things", "conclusio", "top_and_middle")
 
     assert full_pattern == zen
+
+
+def test_whitespace_issues(patterns):
+    """Demonstrate whitespace highlighting in pattern reports.
+
+    This test intentionally fails to show:
+    - Whitespace-only lines (highlighted with yellow background)
+    - Trailing whitespace (highlighted with yellow background)
+    - The whitespace warning section at the end of the report
+    """
+    p = patterns.output
+    p.in_order(
+        """
+First line
+Second line
+Third line
+"""
+    )
+
+    # Content with various whitespace issues:
+    # - Line 2 has trailing spaces
+    # - Line 3 is whitespace-only (4 spaces)
+    # - Line 4 has trailing tab
+    content = """\
+First line
+Second line    
+    
+Fourth line\t
+"""
+
+    assert p == content

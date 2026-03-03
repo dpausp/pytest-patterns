@@ -79,7 +79,9 @@ STATUS_SYMBOLS = {
 EMPTY_LINE_PATTERN = "<empty-line>"
 
 # ANSI codes for whitespace highlighting
-YELLOW_BG = "\x1b[43m"
+GRAY_BG = (
+    "\x1b[100m"  # Bright black/gray background (less aggressive than yellow)
+)
 RESET = "\x1b[0m"
 
 
@@ -390,8 +392,10 @@ class Audit:
 
         if all_names:
             sorted_names = sorted(all_names)
-            return f"Pattern [{', '.join(sorted_names)}] mismatch: {'; '.join(failures)}."
-        return f"Pattern mismatch: {'; '.join(failures)}."
+            return (
+                f"Pattern [{', '.join(sorted_names)}]: {'; '.join(failures)}."
+            )
+        return f"Pattern: {'; '.join(failures)}."
 
     def report(self) -> Iterator[str]:
         yield self._build_summary()
@@ -413,6 +417,7 @@ class Audit:
                 line.status.symbol,
                 line.status_cause,
                 tab_replace(line.data),
+                line.data,  # Original line for whitespace detection
             )
         if self.unmatched_expectations:
             yield ""
@@ -579,14 +584,17 @@ def format_line_report(
     symbol: str,
     cause: str,
     line: str,
+    original_line: str | None = None,
 ) -> str:
     if status not in [Status.EXPECTED, Status.OPTIONAL]:
         # Check for whitespace issues in unexpected/refused lines
-        ws_issue = describe_whitespace(line)
+        # Use original_line for detection (preserves tabs), line for display
+        ws_check_line = original_line if original_line is not None else line
+        ws_issue = describe_whitespace(ws_check_line)
         if ws_issue:
-            # Apply yellow background and annotation
+            # Apply gray background and annotation
             highlighted = (
-                YELLOW_BG
+                GRAY_BG
                 + line_to_control_pictures(line)
                 + RESET
                 + f"  [{ws_issue}]"
