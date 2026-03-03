@@ -500,12 +500,12 @@ $ hatch run all           # All linting + type checking
 
 * [ ] proper release process with tagging, version updates, etc.
 
-* [ ] Get coverage working correctly (https://pytest-cov.readthedocs.io/en/latest/plugins.html doesnt seem to help ...)
+* [x] Get coverage working correctly (93% coverage achieved with direct unit tests)
 
 * [ ] Get the project fully set up to make sense for interested parties and
       potential contributors.
 
-* [ ] optional reporting without colors
+* [x] optional reporting without colors
 
 * [x] matrix builds for multiple python versions / use tox locally and in github action
 
