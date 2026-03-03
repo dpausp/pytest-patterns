@@ -67,21 +67,22 @@ def test_format_line_report_normal_line_unchanged() -> None:
 
 
 def test_format_line_report_whitespace_only_annotated() -> None:
-    """Whitespace-only line gets annotation."""
+    """Whitespace-only line gets highlighted with markers."""
     result = format_line_report(Status.UNEXPECTED, "🟡", "", "    ")
-    assert "[4 spaces]" in result
+    assert "····" in result  # 4 middle dots for 4 spaces
 
 
 def test_format_line_report_trailing_whitespace_annotated() -> None:
-    """Trailing whitespace gets annotation."""
+    """Trailing whitespace gets highlighted with markers."""
     result = format_line_report(Status.UNEXPECTED, "🟡", "", "hello  ")
-    assert "[trailing 2 spaces]" in result
+    assert "··" in result  # 2 middle dots for 2 trailing spaces
 
 
 def test_format_line_report_expected_line_no_annotation() -> None:
-    """Expected lines don't get whitespace annotation."""
+    """Expected lines don't get whitespace highlighting."""
     result = format_line_report(Status.EXPECTED, "🟢", "pattern", "    ")
-    assert "[4 spaces]" not in result
+    assert "·" not in result
+    assert "\x1b[100m" not in result
 
 
 def test_format_line_report_gray_background_applied() -> None:

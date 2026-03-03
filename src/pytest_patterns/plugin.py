@@ -598,7 +598,7 @@ def format_line_report(
                 ws_display = _format_whitespace(
                     original_line if original_line else line
                 )
-                highlighted = GRAY_BG + ws_display + RESET + f"  [{ws_issue}]"
+                highlighted = GRAY_BG + ws_display + RESET
             else:
                 # Trailing whitespace: highlight only trailing part
                 stripped = line.rstrip()
@@ -610,7 +610,6 @@ def format_line_report(
                     + GRAY_BG
                     + _format_whitespace(trailing)
                     + RESET
-                    + f"  [{ws_issue}]"
                 )
             return symbol + " " + cause.ljust(15)[:15] + " | " + highlighted
         line = line_to_control_pictures(line)
