@@ -594,27 +594,44 @@ def format_line_report(
         if ws_issue:
             # Check if whitespace-only or trailing whitespace
             if not ws_check_line.strip():
-                # Whitespace-only: highlight everything
-                highlighted = (
-                    GRAY_BG
-                    + line_to_control_pictures(line)
-                    + RESET
-                    + f"  [{ws_issue}]"
+                # Whitespace-only: highlight everything, show original (with tabs)
+                ws_display = _format_whitespace(
+                    original_line if original_line else line
                 )
+                highlighted = GRAY_BG + ws_display + RESET + f"  [{ws_issue}]"
             else:
                 # Trailing whitespace: highlight only trailing part
                 stripped = line.rstrip()
-                trailing = line[len(stripped) :]
+                # Get trailing from original to preserve tabs
+                orig_stripped = ws_check_line.rstrip()
+                trailing = ws_check_line[len(orig_stripped) :]
                 highlighted = (
                     line_to_control_pictures(stripped)
                     + GRAY_BG
-                    + line_to_control_pictures(trailing)
+                    + _format_whitespace(trailing)
                     + RESET
                     + f"  [{ws_issue}]"
                 )
             return symbol + " " + cause.ljust(15)[:15] + " | " + highlighted
         line = line_to_control_pictures(line)
     return symbol + " " + cause.ljust(15)[:15] + " | " + line
+
+
+def _format_whitespace(ws: str) -> str:
+    """Format whitespace with visible but subtle markers.
+
+    - Space → · (middle dot, less obtrusive than ␠)
+    - Tab   → → (right arrow, clearly different from spaces)
+    """
+    result = []
+    for char in ws:
+        if char == " ":
+            result.append("·")
+        elif char == "\t":
+            result.append("→")
+        else:
+            result.append(char)
+    return "".join(result)
 
 
 def pattern_lines(lines: str) -> list[str]:
