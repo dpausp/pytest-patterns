@@ -592,13 +592,26 @@ def format_line_report(
         ws_check_line = original_line if original_line is not None else line
         ws_issue = describe_whitespace(ws_check_line)
         if ws_issue:
-            # Apply gray background and annotation
-            highlighted = (
-                GRAY_BG
-                + line_to_control_pictures(line)
-                + RESET
-                + f"  [{ws_issue}]"
-            )
+            # Check if whitespace-only or trailing whitespace
+            if not ws_check_line.strip():
+                # Whitespace-only: highlight everything
+                highlighted = (
+                    GRAY_BG
+                    + line_to_control_pictures(line)
+                    + RESET
+                    + f"  [{ws_issue}]"
+                )
+            else:
+                # Trailing whitespace: highlight only trailing part
+                stripped = line.rstrip()
+                trailing = line[len(stripped) :]
+                highlighted = (
+                    line_to_control_pictures(stripped)
+                    + GRAY_BG
+                    + line_to_control_pictures(trailing)
+                    + RESET
+                    + f"  [{ws_issue}]"
+                )
             return symbol + " " + cause.ljust(15)[:15] + " | " + highlighted
         line = line_to_control_pictures(line)
     return symbol + " " + cause.ljust(15)[:15] + " | " + line
