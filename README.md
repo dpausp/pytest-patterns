@@ -55,27 +55,27 @@ some lines were not matched and thus considered **unexpected**:
 
   Here is the string that was tested:
 
-  🟡                 | The Zen of Python, by Tim Peters
-  🟡                 |
-  ⚪️ better_things   | Beautiful is better than ugly.
-  ⚪️ better_things   | Explicit is better than implicit.
-  ⚪️ better_things   | Simple is better than complex.
-  ⚪️ better_things   | Complex is better than complicated.
-  ⚪️ better_things   | Flat is better than nested.
-  ⚪️ better_things   | Sparse is better than dense.
-  🟡                 | Readability counts.
-  🟡                 | Special cases aren't special enough to break the rules.
-  🟡                 | Although practicality beats purity.
-  🟡                 | Errors should never pass silently.
-  🟡                 | Unless explicitly silenced.
-  🟡                 | In the face of ambiguity, refuse the temptation to guess.
-  🟡                 | There should be one-- and preferably only one --obvious way to do it.
-  🟡                 | Although that way may not be obvious at first unless you're Dutch.
-  ⚪️ better_things   | Now is better than never.
-  ⚪️ better_things   | Although never is often better than *right* now.
-  🟡                 | If the implementation is hard to explain, it's a bad idea.
-  🟡                 | If the implementation is easy to explain, it may be a good idea.
-  🟡                 | Namespaces are one honking great idea -- let's do more of those!
+  1 | 🟡                 | The Zen of Python, by Tim Peters
+  2 | 🟡                 |
+  3 | ⚪️ better_things   | Beautiful is better than ugly.
+  4 | ⚪️ better_things   | Explicit is better than implicit.
+  5 | ⚪️ better_things   | Simple is better than complex.
+  6 | ⚪️ better_things   | Complex is better than complicated.
+  7 | ⚪️ better_things   | Flat is better than nested.
+  8 | ⚪️ better_things   | Sparse is better than dense.
+  9 | 🟡                 | Readability counts.
+ 10 | 🟡                 | Special cases aren't special enough to break the rules.
+ 11 | 🟡                 | Although practicality beats purity.
+ 12 | 🟡                 | Errors should never pass silently.
+ 13 | 🟡                 | Unless explicitly silenced.
+ 14 | 🟡                 | In the face of ambiguity, refuse the temptation to guess.
+ 15 | 🟡                 | There should be one-- and preferably only one --obvious way to do it.
+ 16 | 🟡                 | Although that way may not be obvious at first unless you're Dutch.
+ 17 | ⚪️ better_things   | Now is better than never.
+ 18 | ⚪️ better_things   | Although never is often better than *right* now.
+ 19 | 🟡                 | If the implementation is hard to explain, it's a bad idea.
+ 20 | 🟡                 | If the implementation is easy to explain, it may be a good idea.
+ 21 | 🟡                 | Namespaces are one honking great idea -- let's do more of those!
 ```
 
 The report highlights which lines were matched (and which pattern caused the
@@ -115,27 +115,27 @@ This gets us a bit further:
 
   Here is the string that was tested:
 
-  🟡                 | The Zen of Python, by Tim Peters
-  🟡                 |
-  ⚪️ better_things   | Beautiful is better than ugly.
-  ⚪️ better_things   | Explicit is better than implicit.
-  ⚪️ better_things   | Simple is better than complex.
-  ⚪️ better_things   | Complex is better than complicated.
-  ⚪️ better_things   | Flat is better than nested.
-  ⚪️ better_things   | Sparse is better than dense.
-  🟡                 | Readability counts.
-  🟡                 | Special cases aren't special enough to break the rules.
-  🟡                 | Although practicality beats purity.
-  🟡                 | Errors should never pass silently.
-  🟡                 | Unless explicitly silenced.
-  🟡                 | In the face of ambiguity, refuse the temptation to guess.
-  🟡                 | There should be one-- and preferably only one --obvious way to do it.
-  🟡                 | Although that way may not be obvious at first unless you're Dutch.
-  ⚪️ better_things   | Now is better than never.
-  ⚪️ better_things   | Although never is often better than *right* now.
-  🟢 conclusio       | If the implementation is hard to explain, it's a bad idea.
-  🟢 conclusio       | If the implementation is easy to explain, it may be a good idea.
-  🟢 conclusio       | Namespaces are one honking great idea -- let's do more of those!
+  1 | 🟡                 | The Zen of Python, by Tim Peters
+  2 | 🟡                 |
+  3 | ⚪️ better_things   | Beautiful is better than ugly.
+  4 | ⚪️ better_things   | Explicit is better than implicit.
+  5 | ⚪️ better_things   | Simple is better than complex.
+  6 | ⚪️ better_things   | Complex is better than complicated.
+  7 | ⚪️ better_things   | Flat is better than nested.
+  8 | ⚪️ better_things   | Sparse is better than dense.
+  9 | 🟡                 | Readability counts.
+ 10 | 🟡                 | Special cases aren't special enough to break the rules.
+ 11 | 🟡                 | Although practicality beats purity.
+ 12 | 🟡                 | Errors should never pass silently.
+ 13 | 🟡                 | Unless explicitly silenced.
+ 14 | 🟡                 | In the face of ambiguity, refuse the temptation to guess.
+ 15 | 🟡                 | There should be one-- and preferably only one --obvious way to do it.
+ 16 | 🟡                 | Although that way may not be obvious at first unless you're Dutch.
+ 17 | ⚪️ better_things   | Now is better than never.
+ 18 | ⚪️ better_things   | Although never is often better than *right* now.
+ 19 | 🟢 conclusio       | If the implementation is hard to explain, it's a bad idea.
+ 20 | 🟢 conclusio       | If the implementation is easy to explain, it may be a good idea.
+ 21 | 🟢 conclusio       | Namespaces are one honking great idea -- let's do more of those!
 ```
 
 Note, that lines matched by `continuous` are highlighted in green as they are
@@ -178,27 +178,27 @@ Shouldn't that have given us a green bar? I can still see a yellow circle there!
 
   Here is the string that was tested:
 
-  🟢 top_and_middle  | The Zen of Python, by Tim Peters
-  🟡                 |
-  ⚪️ better_things   | Beautiful is better than ugly.
-  ⚪️ better_things   | Explicit is better than implicit.
-  ⚪️ better_things   | Simple is better than complex.
-  ⚪️ better_things   | Complex is better than complicated.
-  ⚪️ better_things   | Flat is better than nested.
-  ⚪️ better_things   | Sparse is better than dense.
-  🟢 top_and_middle  | Readability counts.
-  🟢 top_and_middle  | Special cases aren't special enough to break the rules.
-  🟢 top_and_middle  | Although practicality beats purity.
-  🟢 top_and_middle  | Errors should never pass silently.
-  🟢 top_and_middle  | Unless explicitly silenced.
-  🟢 top_and_middle  | In the face of ambiguity, refuse the temptation to guess.
-  🟢 top_and_middle  | There should be one-- and preferably only one --obvious way to do it.
-  🟢 top_and_middle  | Although that way may not be obvious at first unless you're Dutch.
-  ⚪️ better_things   | Now is better than never.
-  ⚪️ better_things   | Although never is often better than *right* now.
-  🟢 conclusio       | If the implementation is hard to explain, it's a bad idea.
-  🟢 conclusio       | If the implementation is easy to explain, it may be a good idea.
-  🟢 conclusio       | Namespaces are one honking great idea -- let's do more of those!
+  1 | 🟢 top_and_middle  | The Zen of Python, by Tim Peters
+  2 | 🟡                 |
+  3 | ⚪️ better_things   | Beautiful is better than ugly.
+  4 | ⚪️ better_things   | Explicit is better than implicit.
+  5 | ⚪️ better_things   | Simple is better than complex.
+  6 | ⚪️ better_things   | Complex is better than complicated.
+  7 | ⚪️ better_things   | Flat is better than nested.
+  8 | ⚪️ better_things   | Sparse is better than dense.
+  9 | 🟢 top_and_middle  | Readability counts.
+ 10 | 🟢 top_and_middle  | Special cases aren't special enough to break the rules.
+ 11 | 🟢 top_and_middle  | Although practicality beats purity.
+ 12 | 🟢 top_and_middle  | Errors should never pass silently.
+ 13 | 🟢 top_and_middle  | Unless explicitly silenced.
+ 14 | 🟢 top_and_middle  | In the face of ambiguity, refuse the temptation to guess.
+ 15 | 🟢 top_and_middle  | There should be one-- and preferably only one --obvious way to do it.
+ 16 | 🟢 top_and_middle  | Although that way may not be obvious at first unless you're Dutch.
+ 17 | ⚪️ better_things   | Now is better than never.
+ 18 | ⚪️ better_things   | Although never is often better than *right* now.
+ 19 | 🟢 conclusio       | If the implementation is hard to explain, it's a bad idea.
+ 20 | 🟢 conclusio       | If the implementation is easy to explain, it may be a good idea.
+ 21 | 🟢 conclusio       | Namespaces are one honking great idea -- let's do more of those!
 ```
 
 ## Handling empty lines with the `<empty-line>` marker
@@ -273,27 +273,27 @@ of our output is OK and which isn't and why:
 
   Here is the string that was tested:
 
-  🟢 top_and_middle  | The Zen of Python, by Tim Peters
-  🟡                 |
-  ⚪️ better_things   | Beautiful is better than ugly.
-  ⚪️ better_things   | Explicit is better than implicit.
-  ⚪️ better_things   | Simple is better than complex.
-  ⚪️ better_things   | Complex is better than complicated.
-  ⚪️ better_things   | Flat is better than nested.
-  ⚪️ better_things   | Sparse is better than dense.
-  🟢 top_and_middle  | Readability counts.
-  🟢 top_and_middle  | Special cases aren't special enough to break the rules.
-  🟢 top_and_middle  | Although practicality beats purity.
-  🔴 no_should       | Errors should never pass silently.
-  🟢 top_and_middle  | Unless explicitly silenced.
-  🟢 top_and_middle  | In the face of ambiguity, refuse the temptation to guess.
-  🔴 no_should       | There should be one-- and preferably only one --obvious way to do it.
-  🟢 top_and_middle  | Although that way may not be obvious at first unless you're Dutch.
-  ⚪️ better_things   | Now is better than never.
-  ⚪️ better_things   | Although never is often better than *right* now.
-  🟢 conclusio       | If the implementation is hard to explain, it's a bad idea.
-  🟢 conclusio       | If the implementation is easy to explain, it may be a good idea.
-  🟢 conclusio       | Namespaces are one honking great idea -- let's do more of those!`
+  1 | 🟢 top_and_middle  | The Zen of Python, by Tim Peters
+  2 | 🟡                 |
+  3 | ⚪️ better_things   | Beautiful is better than ugly.
+  4 | ⚪️ better_things   | Explicit is better than implicit.
+  5 | ⚪️ better_things   | Simple is better than complex.
+  6 | ⚪️ better_things   | Complex is better than complicated.
+  7 | ⚪️ better_things   | Flat is better than nested.
+  8 | ⚪️ better_things   | Sparse is better than dense.
+  9 | 🟢 top_and_middle  | Readability counts.
+ 10 | 🟢 top_and_middle  | Special cases aren't special enough to break the rules.
+ 11 | 🟢 top_and_middle  | Although practicality beats purity.
+ 12 | 🔴 no_should       | Errors should never pass silently.
+ 13 | 🟢 top_and_middle  | Unless explicitly silenced.
+ 14 | 🟢 top_and_middle  | In the face of ambiguity, refuse the temptation to guess.
+ 15 | 🔴 no_should       | There should be one-- and preferably only one --obvious way to do it.
+ 16 | 🟢 top_and_middle  | Although that way may not be obvious at first unless you're Dutch.
+ 17 | ⚪️ better_things   | Now is better than never.
+ 18 | ⚪️ better_things   | Although never is often better than *right* now.
+ 19 | 🟢 conclusio       | If the implementation is hard to explain, it's a bad idea.
+ 20 | 🟢 conclusio       | If the implementation is easy to explain, it may be a good idea.
+ 21 | 🟢 conclusio       | Namespaces are one honking great idea -- let's do more of those!`
 
   These are the matched refused lines:
 
@@ -373,6 +373,32 @@ prefix> aligned text
 """)
     assert tabs == data
 ```
+
+## Whitespace highlighting
+
+When patterns fail to match, whitespace issues (trailing spaces/tabs, whitespace-only lines)
+are automatically detected and highlighted to help you debug:
+
+- **Trailing whitespace** is highlighted with a gray background
+- **Whitespace-only lines** are shown entirely with gray background
+- **Spaces** are displayed as `·` (middle dot)
+- **Tabs** are displayed as `→` (right arrow)
+
+Example output:
+
+```
+  2 | 🟡                 | Second line····
+  3 | 🟡                 | ····
+  4 | 🟡                 | Fourth line→
+
+  ⚠️  Whitespace issues detected:
+
+     Line 2: trailing 4 spaces
+     Line 3: 4 spaces
+     Line 4: trailing 1 tab
+```
+
+This helps you quickly spot whitespace problems that might cause pattern mismatches.
 
 ## Generating example output
 
@@ -458,24 +484,6 @@ $ hatch run all           # All linting + type checking
 
 * [x] matrix builds for multiple python versions / use tox locally and in github action
 
-* [ ] highlight whitespace (e.g. <TAB> <SPACE> ) when reporting unmatched expected lines. this can be confusing if you see an "empty" line because you typoed e.g.:
-
-```
-    outmigrate.optional(
-        """
-simplevm             waiting                        interval=3 remaining=...
-simplevm             check-staging-config           result='none'
-simplevm             query-migrate                  arguments={} id=None subsystem='qemu/qmp'
-simplevm             migration-status               mbps=... remaining='...' status='active'
-simplevm             vm-destroy-kill-vm             attempt=... subsystem='qemu'
-    """
-    )
-```
-
-Do you see it? There are four spaces on the last line which is now an expected line with four spaces ...
-
-This could also be improved by ignoring whitespace only lines (optionally?)
-
 
 # DONE
 
@@ -497,13 +505,15 @@ This could also be improved by ignoring whitespace only lines (optionally?)
 
 * [x] add  lines that must appear in order without being interrupted
 
+* [x] add line numbers to report output
+
+* [x] highlight whitespace (trailing spaces/tabs, whitespace-only lines) with subtle markers (· for space, → for tab) and gray background
+
 # Later
 
 * [ ] html normalization might want to include a feature to suppress reporting
    of certain lines (and just add `...` in the reporting output, e.g. if something
    fails do not report the owrap lines
-
-* [ ] add line numbers
 
 * [ ] report line numbers on matched avoidances
 
