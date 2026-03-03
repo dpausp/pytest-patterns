@@ -176,7 +176,8 @@ ascii_to_control_pictures = {
     0x1D: "\u241d",  # GS  -> ␝
     0x1E: "\u241e",  # RS  -> ␞
     0x1F: "\u241f",  # US  -> ␟
-    0x20: "\u2420",  # SPACE -> ␠
+    # Note: 0x20 (SPACE) is NOT converted - normal spaces are kept as-is
+    # Whitespace highlighting uses separate · and → markers for visibility
     0x7F: "\u2421",  # DEL -> ␡
 }
 
@@ -411,14 +412,19 @@ class Audit:
         yield ""
         yield "Here is the string that was tested: "
         yield ""
-        for line in self.content:
-            yield format_line_report(
+        # Calculate line number width (e.g., "  1" for <100 lines, "   1" for <1000)
+        line_count = len(self.content)
+        line_num_width = len(str(line_count))
+        for i, line in enumerate(self.content):
+            line_num = str(i + 1).rjust(line_num_width)
+            formatted = format_line_report(
                 line.status,
                 line.status.symbol,
                 line.status_cause,
                 tab_replace(line.data),
                 line.data,  # Original line for whitespace detection
             )
+            yield f"{line_num} | {formatted}"
         if self.unmatched_expectations:
             yield ""
             yield "These are the unmatched expected lines: "
