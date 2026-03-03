@@ -400,6 +400,31 @@ Example output:
 
 This helps you quickly spot whitespace problems that might cause pattern mismatches.
 
+## Disabling colored output
+
+By default, pytest-patterns uses ANSI color codes to highlight whitespace issues.
+You can disable this in three ways:
+
+### 1. Command line flag
+```shell
+$ pytest --patterns-no-color tests/
+```
+
+### 2. Environment variable
+Set the `NO_COLOR` environment variable (respects the [no-color.org](https://no-color.org) standard):
+```shell
+$ export NO_COLOR=1
+$ pytest tests/
+```
+
+### 3. Automatic detection
+Colors are automatically disabled when output is not a TTY (e.g., piped to a file or in most CI environments):
+```shell
+$ pytest tests/ > output.txt  # No colors in file
+```
+
+Note: Whitespace markers (· for spaces, → for tabs) are still shown even when colors are disabled - only the gray background highlighting is removed.
+
 ## Generating example output
 
 If you want to see what text would match a pattern, use `generate_example()`:
