@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 import json
+import os
 import re
 import sys
 from collections.abc import Iterator
@@ -16,7 +17,7 @@ def patterns() -> PatternsLib:
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
-    """Add --patterns-json flag for structured agent output."""
+    """Add pytest-patterns command line options."""
     group = parser.getgroup("pytest-patterns")
     group.addoption(
         "--patterns-json",
@@ -24,6 +25,28 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=False,
         help="Output pattern match results as JSON for agents/CI",
     )
+    group.addoption(
+        "--patterns-no-color",
+        action="store_true",
+        default=False,
+        help="Disable colored output from pytest-patterns",
+    )
+
+
+def _should_use_color(config: pytest.Config) -> bool:
+    """Determine if colored output should be used.
+
+    Color is disabled if:
+    - --patterns-no-color flag is set
+    - NO_COLOR env var is set (de-facto standard)
+    - Output is not a TTY (pipelines, redirected output)
+    """
+    if config.getoption("--patterns-no-color"):
+        return False
+    if os.environ.get("NO_COLOR"):
+        return False
+    # Check if stderr is a TTY (where we print the report)
+    return sys.stderr.isatty()
 
 
 def pytest_assertrepr_compare(
@@ -34,11 +57,12 @@ def pytest_assertrepr_compare(
 ) -> list[str] | None:
     if op != "==":
         return None
+    use_color = _should_use_color(config)
     if isinstance(left, Pattern):
         audit = left._audit(right)
         if config.getoption("--patterns-json"):
             return [json.dumps(audit.to_json(), indent=2)]
-        report_lines = list(audit.report())
+        report_lines = list(audit.report(use_color=use_color))
         # Print full report to stderr (skip summary line, avoids truncation)
         for line in report_lines[1:]:
             print(line, file=sys.stderr)
@@ -48,7 +72,7 @@ def pytest_assertrepr_compare(
         audit = right._audit(left)
         if config.getoption("--patterns-json"):
             return [json.dumps(audit.to_json(), indent=2)]
-        report_lines = list(audit.report())
+        report_lines = list(audit.report(use_color=use_color))
         # Print full report to stderr (skip summary line, avoids truncation)
         for line in report_lines[1:]:
             print(line, file=sys.stderr)
@@ -398,7 +422,7 @@ class Audit:
             )
         return f"Pattern: {'; '.join(failures)}."
 
-    def report(self) -> Iterator[str]:
+    def report(self, use_color: bool = True) -> Iterator[str]:
         yield self._build_summary()
         yield ""
         yield " | ".join(
@@ -423,6 +447,7 @@ class Audit:
                 line.status_cause,
                 tab_replace(line.data),
                 line.data,  # Original line for whitespace detection
+                use_color=use_color,
             )
             yield f"{line_num} | {formatted}"
         if self.unmatched_expectations:
@@ -431,7 +456,11 @@ class Audit:
             yield ""
             for name, line_str in self.unmatched_expectations:
                 yield format_line_report(
-                    Status.REFUSED, Status.REFUSED.symbol, name, line_str
+                    Status.REFUSED,
+                    Status.REFUSED.symbol,
+                    name,
+                    line_str,
+                    use_color=use_color,
                 )
         if self.matched_refused:
             yield ""
@@ -439,7 +468,11 @@ class Audit:
             yield ""
             for name, line_str in self.matched_refused:
                 yield format_line_report(
-                    Status.REFUSED, Status.REFUSED.symbol, name, line_str
+                    Status.REFUSED,
+                    Status.REFUSED.symbol,
+                    name,
+                    line_str,
+                    use_color=use_color,
                 )
         # Whitespace warning section
         ws_issues = self._collect_whitespace_issues()
@@ -591,6 +624,7 @@ def format_line_report(
     cause: str,
     line: str,
     original_line: str | None = None,
+    use_color: bool = True,
 ) -> str:
     if status not in [Status.EXPECTED, Status.OPTIONAL]:
         # Check for whitespace issues in unexpected/refused lines
@@ -604,18 +638,20 @@ def format_line_report(
                 ws_display = _format_whitespace(
                     original_line if original_line else line
                 )
-                highlighted = GRAY_BG + ws_display + RESET
+                highlighted = (
+                    GRAY_BG + ws_display + RESET if use_color else ws_display
+                )
             else:
                 # Trailing whitespace: highlight only trailing part
                 stripped = line.rstrip()
                 # Get trailing from original to preserve tabs
                 orig_stripped = ws_check_line.rstrip()
                 trailing = ws_check_line[len(orig_stripped) :]
-                highlighted = (
-                    line_to_control_pictures(stripped)
-                    + GRAY_BG
-                    + _format_whitespace(trailing)
-                    + RESET
+                ws_formatted = _format_whitespace(trailing)
+                highlighted = line_to_control_pictures(stripped) + (
+                    GRAY_BG + ws_formatted + RESET
+                    if use_color
+                    else ws_formatted
                 )
             return symbol + " " + cause.ljust(15)[:15] + " | " + highlighted
         line = line_to_control_pictures(line)
