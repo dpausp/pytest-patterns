@@ -271,7 +271,7 @@ def test_refused_lines_fail(patterns: PatternsLib) -> None:
         "",
         "These are the matched refused lines: ",
         "",
-        "🔴 refused         | This is a refused line",
+        "🔴 refused         | This is a refused line  (lines 1)",
     ]
     assert not audit.is_ok()
 

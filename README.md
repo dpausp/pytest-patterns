@@ -534,13 +534,17 @@ $ hatch run all           # All linting + type checking
 
 * [x] highlight whitespace (trailing spaces/tabs, whitespace-only lines) with subtle markers (· for space, → for tab) and gray background
 
-# Later
+* [x] add line numbers to report output
+
+* [x] highlight whitespace (· for space, → for tab)
+
+## Later
 
 * [ ] html normalization might want to include a feature to suppress reporting
    of certain lines (and just add `...` in the reporting output, e.g. if something
    fails do not report the owrap lines
 
-* [ ] report line numbers on matched avoidances
+* [x] report line numbers on matched avoidances
 
 * [ ] structlog integration
 

@@ -467,13 +467,19 @@ class Audit:
             yield "These are the matched refused lines: "
             yield ""
             for name, line_str in self.matched_refused:
-                yield format_line_report(
+                # Find line numbers where this refused pattern matched
+                line_numbers = self._find_refused_line_numbers(name, line_str)
+                formatted = format_line_report(
                     Status.REFUSED,
                     Status.REFUSED.symbol,
                     name,
                     line_str,
                     use_color=use_color,
                 )
+                if line_numbers:
+                    yield f"{formatted}  (lines {', '.join(map(str, line_numbers))})"
+                else:
+                    yield formatted
         # Whitespace warning section
         ws_issues = self._collect_whitespace_issues()
         if ws_issues:
@@ -506,6 +512,19 @@ class Audit:
                 issues.append((pos, f"expected '{expected_line}' [{ws_desc}]"))
 
         return issues
+
+    def _find_refused_line_numbers(self, name: str, pattern: str) -> list[int]:
+        """Find all line numbers where a refused pattern matched.
+
+        Returns list of 1-based line numbers.
+        """
+        line_numbers: list[int] = []
+        for i, line in enumerate(self.content):
+            if line.status == Status.REFUSED and line.status_cause == name:
+                # Check if the line matches the pattern
+                if line.matches(pattern):
+                    line_numbers.append(i + 1)
+        return sorted(line_numbers)
 
     def is_ok(self) -> bool:
         if self.unmatched_expectations:
