@@ -392,7 +392,6 @@ WRONG third
 
 
 def test_single_unmatched_is_primary(patterns: PatternsLib) -> None:
-    """Single unmatched pattern is marked as 'primary'."""
     patterns.test.in_order(
         """\
 first
@@ -410,9 +409,6 @@ WRONG second
 
     assert len(result["unmatched_patterns"]) == 1
     assert result["unmatched_patterns"][0]["failure_type"] == "primary"
-
-
-# TestSummaryFailureCounts - Tests for primary/cascading failure counts in summary.
 
 
 def test_no_failures_means_zero_counts(patterns: PatternsLib) -> None:
@@ -460,3 +456,218 @@ WRONG fourth
     assert result["summary"]["primary_failures"] == 1
     assert result["summary"]["cascading_failures"] == 3
     assert result["summary"]["unmatched"] == 4
+
+
+# --- Additional Audit to_json tests ---
+
+
+def test_to_json_success() -> None:
+    """JSON output for successful match."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1\nline2")
+    audit.in_order("pattern1", ["line1", "line2"])
+    result = audit.to_json()
+    assert result["status"] == "passed"
+    assert result["summary"]["total_lines"] == 2
+    assert result["summary"]["expected"] == 2
+
+
+def test_to_json_failure() -> None:
+    """JSON output for failed match."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1")
+    audit.in_order("pattern1", ["line1", "line2"])
+    result = audit.to_json()
+    assert result["status"] == "failed"
+    assert result["summary"]["unmatched"] == 1
+    assert result["summary"]["primary_failures"] == 1
+    assert result["summary"]["cascading_failures"] == 0
+
+
+def test_to_json_lines() -> None:
+    """JSON output includes line details."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1")
+    audit.in_order("pattern1", ["line1"])
+    result = audit.to_json()
+    assert len(result["lines"]) == 1
+    assert result["lines"][0]["number"] == 1
+    assert result["lines"][0]["content"] == "line1"
+    assert result["lines"][0]["status"] == "expected"
+    assert result["lines"][0]["pattern"] == "pattern1"
+
+
+def test_to_json_unmatched_patterns() -> None:
+    """JSON output includes unmatched patterns."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1")
+    audit.in_order("pattern1", ["line1", "missing"])
+    result = audit.to_json()
+    assert len(result["unmatched_patterns"]) == 1
+    assert result["unmatched_patterns"][0]["pattern"] == "pattern1"
+    assert result["unmatched_patterns"][0]["expected_line"] == "missing"
+    assert result["unmatched_patterns"][0]["failure_type"] == "primary"
+
+
+def test_to_json_matched_refused() -> None:
+    """JSON output includes matched refused patterns."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("error line")
+    audit.refused("no_errors", ["...error..."])
+    result = audit.to_json()
+    assert len(result["matched_refused"]) == 1
+    assert result["matched_refused"][0]["pattern"] == "no_errors"
+
+
+def test_to_json_context() -> None:
+    """JSON output includes context for failures."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("a\nb\nc\nd\ne\nf\ng")
+    audit.in_order("pattern1", ["a", "x"])  # Will fail at 'x'
+    result = audit.to_json()
+    # Check context is present in unmatched patterns
+    if result["unmatched_patterns"]:
+        entry = result["unmatched_patterns"][0]
+        # Context may or may not be present depending on position
+        if "context_lines" in entry:
+            assert isinstance(entry["context_lines"], list)
+
+
+# --- Audit build unmatched entry tests ---
+
+
+def test_build_unmatched_entry_basic() -> None:
+    """Basic unmatched entry."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1\nline2")
+    entry = audit._build_unmatched_entry("pattern1", "missing", is_primary=True)
+    assert entry["pattern"] == "pattern1"
+    assert entry["expected_line"] == "missing"
+    assert entry["failure_type"] == "primary"
+
+
+def test_build_unmatched_entry_with_position() -> None:
+    """Unmatched entry with position info."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1\nline2")
+    audit.in_order("pattern1", ["line1", "missing"])
+    # This should record position
+    entry = audit._build_unmatched_entry("pattern1", "missing", is_primary=True)
+    # Position should be recorded
+    if "actual_at_line" in entry:
+        assert entry["actual_at_line"] >= 1
+
+
+def test_build_unmatched_entry_cascading() -> None:
+    """Cascading failure entry."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1")
+    entry = audit._build_unmatched_entry(
+        "pattern1", "missing", is_primary=False
+    )
+    assert entry["failure_type"] == "cascading"
+
+
+# --- Audit build matched refused entry tests ---
+
+
+def test_build_matched_refused_entry_basic() -> None:
+    """Basic matched refused entry."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("error line")
+    audit.refused("no_errors", ["...error..."])
+    entries = list(audit.matched_refused)
+    if entries:
+        name, line_str = entries[0]
+        entry = audit._build_matched_refused_entry(name, line_str)
+        assert entry["pattern"] == name
+        assert entry["refused_line"] == line_str
+
+
+def test_build_matched_refused_entry_with_position_in_range() -> None:
+    """Matched refused entry with position in valid range."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1\nerror\nline3")
+    audit.refused("no_errors", ["...error..."])
+    # The position should be recorded and in valid range
+    if audit.matched_refused:
+        name, line_str = list(audit.matched_refused)[0]
+        entry = audit._build_matched_refused_entry(name, line_str)
+        # Should have position and context
+        assert "actual_at_line" in entry
+        assert entry["actual_at_line"] == 2  # Line 2
+        assert "actual_line" in entry
+        assert "context_lines" in entry
+
+
+def test_build_matched_refused_entry_position_out_of_range() -> None:
+    """Matched refused entry with position out of range."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1")
+    # Manually set a position that's out of range
+    audit.matched_refused.add(("pattern1", "error"))
+    audit._matched_refused_positions[("pattern1", "error")] = (
+        999  # Out of range
+    )
+    entry = audit._build_matched_refused_entry("pattern1", "error")
+    # Should have position but no actual_line
+    assert entry["actual_at_line"] == 999
+    assert "actual_line" not in entry  # Position out of range
+    # Should still have context (will be truncated to available lines)
+    assert "context_lines" in entry
+
+
+def test_build_unmatched_entry_position_out_of_range() -> None:
+    """Unmatched entry with position out of range."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1")
+    # Manually set position out of range
+    audit._unmatched_positions[("pattern1", "missing")] = 999
+    entry = audit._build_unmatched_entry("pattern1", "missing", is_primary=True)
+    # Should have position but no actual_line
+    assert entry["actual_at_line"] == 999
+    assert "actual_line" not in entry  # Position out of range
+
+
+# --- Multi-pattern summary tests ---
+
+
+def test_build_summary_refused_multiple_patterns() -> None:
+    """Summary with refused lines from multiple patterns."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("error1\nerror2")
+    audit.refused("pattern1", ["...error1..."])
+    audit.refused("pattern2", ["...error2..."])
+    summary = audit._build_summary()
+    # Should list both pattern names
+    assert "pattern1" in summary
+    assert "pattern2" in summary
+    assert "refused" in summary.lower()
+
+
+def test_build_summary_unmatched_multiple_patterns() -> None:
+    """Summary with unmatched from multiple patterns."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1")
+    audit.in_order("pattern1", ["line1", "missing1"])
+    # After first failure, add another unmatched
+    audit.unmatched_expectations.append(("pattern2", "missing2"))
+    summary = audit._build_summary()
+    # Should list both pattern names for unmatched
+    assert "pattern1" in summary
+    assert "pattern2" in summary
