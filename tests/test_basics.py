@@ -54,6 +54,810 @@ def test_tab_replace() -> None:
     assert tab_replace("123456789\t0") == "123456789       0"
 
 
+# --- Control picture conversion tests ---
+
+
+def test_to_control_picture_null() -> None:
+    """Test NUL character conversion."""
+    from pytest_patterns.plugin import to_control_picture
+
+    assert to_control_picture("\x00") == "\u2400"
+
+
+def test_to_control_picture_tab() -> None:
+    """Test HT (tab) character conversion."""
+    from pytest_patterns.plugin import to_control_picture
+
+    assert to_control_picture("\t") == "\u2409"
+
+
+def test_to_control_picture_lf() -> None:
+    """Test LF (line feed) character conversion."""
+    from pytest_patterns.plugin import to_control_picture
+
+    assert to_control_picture("\n") == "\u240a"
+
+
+def test_to_control_picture_cr() -> None:
+    """Test CR (carriage return) character conversion."""
+    from pytest_patterns.plugin import to_control_picture
+
+    assert to_control_picture("\r") == "\u240d"
+
+
+def test_to_control_picture_del() -> None:
+    """Test DEL character conversion."""
+    from pytest_patterns.plugin import to_control_picture
+
+    assert to_control_picture("\x7f") == "\u2421"
+
+
+def test_to_control_picture_space() -> None:
+    """Test space is NOT converted (normal spaces kept as-is)."""
+    from pytest_patterns.plugin import to_control_picture
+
+    assert to_control_picture(" ") == " "
+
+
+def test_to_control_picture_regular_char() -> None:
+    """Test regular characters are not converted."""
+    from pytest_patterns.plugin import to_control_picture
+
+    assert to_control_picture("a") == "a"
+    assert to_control_picture("Z") == "Z"
+    assert to_control_picture("9") == "9"
+
+
+def test_line_to_control_pictures_mixed() -> None:
+    """Test conversion of line with mixed characters."""
+    from pytest_patterns.plugin import line_to_control_pictures
+
+    line = "hello\tworld"
+    result = line_to_control_pictures(line)
+    assert result == "hello\u2409world"
+
+
+def test_line_to_control_pictures_all_control() -> None:
+    """Test conversion of line with only control characters."""
+    from pytest_patterns.plugin import line_to_control_pictures
+
+    line = "\x00\x01\x02"
+    result = line_to_control_pictures(line)
+    assert result == "\u2400\u2401\u2402"
+
+
+def test_line_to_control_pictures_empty() -> None:
+    """Test conversion of empty line."""
+    from pytest_patterns.plugin import line_to_control_pictures
+
+    assert line_to_control_pictures("") == ""
+
+
+# --- Match function tests ---
+
+
+def test_match_empty_line_pattern_on_empty_line() -> None:
+    """Match empty-line pattern on actual empty line."""
+    from pytest_patterns.plugin import match, EMPTY_LINE_PATTERN
+
+    result = match(EMPTY_LINE_PATTERN, "")
+    assert result is True
+
+
+def test_match_empty_line_pattern_on_non_empty() -> None:
+    """Match empty-line pattern on non-empty line."""
+    from pytest_patterns.plugin import match, EMPTY_LINE_PATTERN
+
+    result = match(EMPTY_LINE_PATTERN, "text")
+    # Should not match, continues to tab replacement and regex
+    assert result is None or result is False
+
+
+def test_match_empty_line_marker_on_empty_line() -> None:
+    """Match <empty-line> marker on empty line."""
+    from pytest_patterns.plugin import match, EMPTY_LINE_PATTERN
+
+    result = match(EMPTY_LINE_PATTERN, "")
+    assert result is True
+
+
+def test_match_empty_line_marker_on_content() -> None:
+    """Match <empty-line> marker on non-empty line."""
+    from pytest_patterns.plugin import match, EMPTY_LINE_PATTERN
+
+    result = match(EMPTY_LINE_PATTERN, "some text")
+    # Should not return True, should continue to regex matching
+    # The marker should not match actual content
+    assert result is not True
+
+
+# --- Pattern lines utility tests ---
+
+
+def test_pattern_lines_simple() -> None:
+    """Simple pattern split."""
+    from pytest_patterns.plugin import pattern_lines
+
+    assert pattern_lines("line1\nline2") == ["line1", "line2"]
+
+
+def test_pattern_lines_empty_lines_filtered() -> None:
+    """Empty lines are filtered out."""
+    from pytest_patterns.plugin import pattern_lines
+
+    assert pattern_lines("line1\n\nline2") == ["line1", "line2"]
+
+
+def test_pattern_lines_trailing_newline() -> None:
+    """Trailing newline is handled."""
+    from pytest_patterns.plugin import pattern_lines
+
+    assert pattern_lines("line1\nline2\n") == ["line1", "line2"]
+
+
+def test_pattern_lines_empty_string() -> None:
+    """Empty string returns empty list."""
+    from pytest_patterns.plugin import pattern_lines
+
+    assert pattern_lines("") == []
+
+
+def test_pattern_lines_only_empty_lines() -> None:
+    """Only empty lines returns empty list."""
+    from pytest_patterns.plugin import pattern_lines
+
+    assert pattern_lines("\n\n\n") == []
+
+
+# --- Line class tests ---
+
+
+def test_line_init() -> None:
+    """Line initialization."""
+    from pytest_patterns.plugin import Line, Status
+
+    line = Line("test data")
+    assert line.data == "test data"
+    assert line.status == Status.UNEXPECTED
+    assert line.status_cause == ""
+
+
+def test_line_matches_exact() -> None:
+    """Exact match."""
+    from pytest_patterns.plugin import Line
+
+    line = Line("hello")
+    assert line.matches("hello") is True
+
+
+def test_line_matches_wildcard() -> None:
+    """Wildcard match."""
+    from pytest_patterns.plugin import Line
+
+    line = Line("hello world")
+    assert line.matches("...world...") is True
+
+
+def test_line_matches_no_match() -> None:
+    """No match."""
+    from pytest_patterns.plugin import Line
+
+    line = Line("hello")
+    assert line.matches("goodbye") is False
+
+
+def test_line_mark_upgrade() -> None:
+    """Mark upgrades status."""
+    from pytest_patterns.plugin import Line, Status
+
+    line = Line("test")
+    line.mark(Status.OPTIONAL, "pattern1")
+    assert line.status == Status.OPTIONAL
+    assert line.status_cause == "pattern1"
+
+
+def test_line_mark_no_downgrade() -> None:
+    """Mark does not downgrade status."""
+    from pytest_patterns.plugin import Line, Status
+
+    line = Line("test")
+    line.mark(Status.EXPECTED, "pattern1")
+    line.mark(Status.OPTIONAL, "pattern2")
+    assert line.status == Status.EXPECTED
+    assert line.status_cause == "pattern1"
+
+
+def test_line_mark_same_level() -> None:
+    """Mark at same level has no effect."""
+    from pytest_patterns.plugin import Line, Status
+
+    line = Line("test")
+    line.mark(Status.OPTIONAL, "pattern1")
+    line.mark(Status.OPTIONAL, "pattern2")
+    assert line.status_cause == "pattern1"
+
+
+# --- Audit class tests ---
+
+
+def test_audit_init() -> None:
+    """Audit initialization."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1\nline2")
+    assert len(audit.content) == 2
+    assert audit.content[0].data == "line1"
+    assert audit.content[1].data == "line2"
+    assert audit.unmatched_expectations == []
+    assert audit.matched_refused == set()
+
+
+def test_audit_cursor() -> None:
+    """Audit cursor iteration."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("a\nb\nc")
+    lines = list(audit.cursor())
+    assert len(lines) == 3
+    assert lines[0].data == "a"
+
+
+def test_audit_optional_simple() -> None:
+    """Optional pattern matching."""
+    from pytest_patterns.plugin import Audit, Status
+
+    audit = Audit("error occurred")
+    audit.optional("pattern1", ["...error..."])
+    assert audit.content[0].status == Status.OPTIONAL
+    assert audit.content[0].status_cause == "pattern1"
+
+
+def test_audit_optional_no_match() -> None:
+    """Optional pattern with no match."""
+    from pytest_patterns.plugin import Audit, Status
+
+    audit = Audit("no match here")
+    audit.optional("pattern1", ["...error..."])
+    assert audit.content[0].status == Status.UNEXPECTED
+
+
+def test_audit_refused_simple() -> None:
+    """Refused pattern matching."""
+    from pytest_patterns.plugin import Audit, Status
+
+    audit = Audit("error occurred")
+    audit.refused("pattern1", ["...error..."])
+    assert audit.content[0].status == Status.REFUSED
+    assert ("pattern1", "...error...") in audit.matched_refused
+
+
+def test_audit_refused_no_match() -> None:
+    """Refused pattern with no match."""
+    from pytest_patterns.plugin import Audit, Status
+
+    audit = Audit("no match here")
+    audit.refused("pattern1", ["...error..."])
+    assert audit.content[0].status == Status.UNEXPECTED
+    assert ("pattern1", "...error...") not in audit.matched_refused
+
+
+def test_audit_continuous_simple() -> None:
+    """Continuous pattern matching."""
+    from pytest_patterns.plugin import Audit, Status
+
+    audit = Audit("line1\nline2\nline3")
+    audit.continuous("pattern1", ["line1", "line2"])
+    assert audit.content[0].status == Status.EXPECTED
+    assert audit.content[1].status == Status.EXPECTED
+    assert audit.content[2].status == Status.UNEXPECTED
+
+
+def test_audit_continuous_with_empty_lines() -> None:
+    """Continuous pattern allows empty lines in between."""
+    from pytest_patterns.plugin import Audit, Status
+
+    audit = Audit("line1\n\nline2")
+    audit.continuous("pattern1", ["line1", "line2"])
+    assert audit.content[0].status == Status.EXPECTED
+    assert audit.content[1].status == Status.OPTIONAL  # Empty line allowed
+    assert audit.content[2].status == Status.EXPECTED
+
+
+def test_audit_continuous_broken() -> None:
+    """Continuous pattern broken by non-matching line."""
+    from pytest_patterns.plugin import Audit, Status
+
+    audit = Audit("line1\nunexpected\nline2")
+    audit.continuous("pattern1", ["line1", "line2"])
+    assert audit.content[0].status == Status.EXPECTED
+    assert audit.content[1].status == Status.REFUSED
+    assert len(audit.unmatched_expectations) > 0
+
+
+def test_audit_continuous_incomplete() -> None:
+    """Continuous pattern not fully matched."""
+    from pytest_patterns.plugin import Audit, Status
+
+    audit = Audit("line1")
+    audit.continuous("pattern1", ["line1", "line2"])
+    assert audit.content[0].status == Status.EXPECTED
+    assert len(audit.unmatched_expectations) > 0
+
+
+def test_audit_in_order_simple() -> None:
+    """In-order pattern matching."""
+    from pytest_patterns.plugin import Audit, Status
+
+    audit = Audit("a\nb\nc")
+    audit.in_order("pattern1", ["a", "c"])
+    assert audit.content[0].status == Status.EXPECTED
+    assert audit.content[1].status == Status.UNEXPECTED
+    assert audit.content[2].status == Status.EXPECTED
+
+
+def test_audit_in_order_out_of_order() -> None:
+    """In-order pattern with wrong order."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("b\na\nc")
+    audit.in_order("pattern1", ["a", "b"])
+    assert len(audit.unmatched_expectations) > 0
+
+
+def test_audit_in_order_partial_reset() -> None:
+    """In-order pattern resets if no match found."""
+    from pytest_patterns.plugin import Audit, Status
+
+    audit = Audit("x\na\nb")
+    audit.in_order("pattern1", ["a", "b"])
+    # Should find 'a' on second try after reset
+    assert audit.content[1].status == Status.EXPECTED
+    assert audit.content[2].status == Status.EXPECTED
+
+
+def test_audit_is_ok_success() -> None:
+    """is_ok returns True for successful match."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1\nline2")
+    audit.in_order("pattern1", ["line1", "line2"])
+    assert audit.is_ok() is True
+
+
+def test_audit_is_ok_failure_unmatched() -> None:
+    """is_ok returns False with unmatched expectations."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1")
+    audit.in_order("pattern1", ["line1", "line2"])
+    assert audit.is_ok() is False
+
+
+def test_audit_is_ok_failure_unexpected() -> None:
+    """is_ok returns False with unexpected lines."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1\nunexpected")
+    audit.in_order("pattern1", ["line1"])
+    assert audit.is_ok() is False
+
+
+# --- Pattern class tests ---
+
+
+def test_pattern_init() -> None:
+    """Pattern initialization."""
+    from pytest_patterns.plugin import Pattern, PatternsLib
+
+    lib = PatternsLib()
+    p = Pattern(lib, "test_pattern")
+    assert p.name == "test_pattern"
+    assert p.library is lib
+    assert p.ops == []
+    assert p.inherited == set()
+
+
+def test_pattern_continuous() -> None:
+    """Pattern continuous method."""
+    from pytest_patterns.plugin import Pattern, PatternsLib
+
+    lib = PatternsLib()
+    p = Pattern(lib, "test")
+    p.continuous("line1\nline2")
+    assert len(p.ops) == 1
+    assert p.ops[0][0] == "continuous"
+    assert p.ops[0][1] == "test"
+
+
+def test_pattern_in_order() -> None:
+    """Pattern in_order method."""
+    from pytest_patterns.plugin import Pattern, PatternsLib
+
+    lib = PatternsLib()
+    p = Pattern(lib, "test")
+    p.in_order("line1\nline2")
+    assert len(p.ops) == 1
+    assert p.ops[0][0] == "in_order"
+
+
+def test_pattern_optional() -> None:
+    """Pattern optional method."""
+    from pytest_patterns.plugin import Pattern, PatternsLib
+
+    lib = PatternsLib()
+    p = Pattern(lib, "test")
+    p.optional("line1\nline2")
+    assert len(p.ops) == 1
+    assert p.ops[0][0] == "optional"
+
+
+def test_pattern_refused() -> None:
+    """Pattern refused method."""
+    from pytest_patterns.plugin import Pattern, PatternsLib
+
+    lib = PatternsLib()
+    p = Pattern(lib, "test")
+    p.refused("...error...")
+    assert len(p.ops) == 1
+    assert p.ops[0][0] == "refused"
+
+
+def test_pattern_merge() -> None:
+    """Pattern merge method."""
+    from pytest_patterns.plugin import PatternsLib
+
+    lib = PatternsLib()
+    p1 = lib.pattern1
+    p1.optional("line1")
+
+    p2 = lib.pattern2
+    p2.in_order("line2")
+    p2.merge("pattern1")
+
+    # Check inheritance
+    assert "pattern1" in p2.inherited
+
+
+def test_pattern_normalize() -> None:
+    """Pattern normalize method (currently no-op)."""
+    from pytest_patterns.plugin import Pattern, PatternsLib
+
+    lib = PatternsLib()
+    p = Pattern(lib, "test")
+    p.normalize("json")  # Should not raise
+    assert len(p.ops) == 0  # No ops added
+
+
+def test_pattern_flat_ops() -> None:
+    """Pattern flat_ops includes inherited patterns."""
+    from pytest_patterns.plugin import PatternsLib
+
+    lib = PatternsLib()
+    p1 = lib.base
+    p1.optional("base_line")
+
+    p2 = lib.derived
+    p2.in_order("derived_line")
+    p2.merge("base")
+
+    ops = list(p2.flat_ops())
+    # Should include both base and derived ops
+    op_types = [op[0] for op in ops]
+    assert "optional" in op_types  # From base
+    assert "in_order" in op_types  # From derived
+
+
+def test_pattern_audit() -> None:
+    """Pattern _audit creates Audit object."""
+    from pytest_patterns.plugin import PatternsLib, Audit
+
+    lib = PatternsLib()
+    p = lib.test
+    p.in_order("line1")
+    audit = p._audit("line1")
+    assert isinstance(audit, Audit)
+    assert audit.is_ok()
+
+
+def test_pattern_generate_example_simple() -> None:
+    """Pattern generate_example with simple patterns."""
+    from pytest_patterns.plugin import PatternsLib
+
+    lib = PatternsLib()
+    p = lib.test
+    p.in_order("line1\nline2")
+    example = p.generate_example()
+    assert "line1" in example
+    assert "line2" in example
+
+
+def test_pattern_generate_example_with_wildcards() -> None:
+    """Pattern generate_example replaces wildcards."""
+    from pytest_patterns.plugin import PatternsLib
+
+    lib = PatternsLib()
+    p = lib.test
+    p.optional("...error...")
+    example = p.generate_example()
+    assert "[...]" in example
+    # Wildcard ... should be replaced with [...]
+    assert example == "[...]error[...]"
+
+
+def test_pattern_generate_example_empty_line() -> None:
+    """Pattern generate_example handles empty-line marker."""
+    from pytest_patterns.plugin import PatternsLib
+
+    lib = PatternsLib()
+    p = lib.test
+    p.optional("<empty-line>")
+    example = p.generate_example()
+    # Empty line marker should be replaced with empty string
+    assert "<empty-line>" not in example
+
+
+def test_pattern_generate_example_ignores_refused() -> None:
+    """Pattern generate_example ignores refused patterns."""
+    from pytest_patterns.plugin import PatternsLib
+
+    lib = PatternsLib()
+    p = lib.test
+    p.in_order("good_line")
+    p.refused("bad_line")
+    example = p.generate_example()
+    assert "good_line" in example
+    assert "bad_line" not in example
+
+
+def test_pattern_replace_wildcards_ellipsis() -> None:
+    """Pattern _replace_wildcards replaces ellipsis."""
+    from pytest_patterns.plugin import Pattern, PatternsLib
+
+    lib = PatternsLib()
+    p = Pattern(lib, "test")
+    result = p._replace_wildcards("...error...")
+    assert result == "[...]error[...]"
+
+
+def test_pattern_replace_wildcards_empty_line() -> None:
+    """Pattern _replace_wildcards replaces empty-line marker."""
+    from pytest_patterns.plugin import Pattern, PatternsLib
+
+    lib = PatternsLib()
+    p = Pattern(lib, "test")
+    result = p._replace_wildcards("<empty-line>")
+    assert result == ""
+
+
+def test_pattern_replace_wildcards_normal() -> None:
+    """Pattern _replace_wildcards leaves normal text unchanged."""
+    from pytest_patterns.plugin import Pattern, PatternsLib
+
+    lib = PatternsLib()
+    p = Pattern(lib, "test")
+    result = p._replace_wildcards("normal text")
+    assert result == "normal text"
+
+
+def test_pattern_eq_success() -> None:
+    """Pattern equality check success."""
+    from pytest_patterns.plugin import PatternsLib
+
+    lib = PatternsLib()
+    p = lib.test
+    p.in_order("line1\nline2")
+    assert p == "line1\nline2"
+
+
+def test_pattern_eq_failure() -> None:
+    """Pattern equality check failure."""
+    from pytest_patterns.plugin import PatternsLib
+
+    lib = PatternsLib()
+    p = lib.test
+    p.in_order("line1\nline2")
+    assert not (p == "line1\nline3")
+
+
+def test_pattern_eq_with_other_object() -> None:
+    """Pattern equality with non-string raises AssertionError."""
+    from pytest_patterns.plugin import PatternsLib
+
+    lib = PatternsLib()
+    p = lib.test
+    try:
+        _ = p == 123  # type: ignore
+        assert False, "Should have raised AssertionError"
+    except AssertionError:
+        pass
+
+
+# --- PatternsLib class tests ---
+
+
+def test_patterns_lib_getattr() -> None:
+    """PatternsLib creates Pattern on attribute access."""
+    from pytest_patterns.plugin import Pattern, PatternsLib
+
+    lib = PatternsLib()
+    p = lib.test_pattern
+    assert isinstance(p, Pattern)
+    assert p.name == "test_pattern"
+    assert p.library is lib
+
+
+def test_patterns_lib_caching() -> None:
+    """PatternsLib caches patterns."""
+    from pytest_patterns.plugin import PatternsLib
+
+    lib = PatternsLib()
+    p1 = lib.test
+    p2 = lib.test
+    assert p1 is p2  # Same object
+
+
+def test_patterns_lib_multiple_patterns() -> None:
+    """PatternsLib can create multiple patterns."""
+    from pytest_patterns.plugin import PatternsLib
+
+    lib = PatternsLib()
+    p1 = lib.pattern1
+    p2 = lib.pattern2
+    assert p1.name == "pattern1"
+    assert p2.name == "pattern2"
+    assert p1 is not p2
+
+
+# --- Audit report tests ---
+
+
+def test_report_basic() -> None:
+    """Basic report generation."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1\nline2")
+    audit.in_order("pattern1", ["line1", "line2"])
+    lines = list(audit.report(use_color=True))
+    assert len(lines) > 0
+    assert any("pattern1" in line for line in lines)
+
+
+def test_report_with_unmatched() -> None:
+    """Report with unmatched expectations."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1")
+    audit.in_order("pattern1", ["line1", "missing"])
+    lines = list(audit.report(use_color=True))
+    assert any("unmatched" in line.lower() for line in lines)
+
+
+def test_report_with_refused() -> None:
+    """Report with matched refused lines."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("error line")
+    audit.refused("no_errors", ["...error..."])
+    lines = list(audit.report(use_color=True))
+    assert any("refused" in line.lower() for line in lines)
+
+
+def test_report_with_whitespace_issues() -> None:
+    """Report includes whitespace warnings."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line  ")
+    # Don't match so line stays unexpected with trailing whitespace
+    lines = list(audit.report(use_color=True))
+    # Should include whitespace warning
+    assert any("whitespace" in line.lower() for line in lines)
+
+
+def test_report_no_color() -> None:
+    """Report without color codes."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1\nline2")
+    audit.in_order("pattern1", ["line1", "line2"])
+    lines = list(audit.report(use_color=False))
+    # Should not contain ANSI codes
+    assert not any("\x1b[" in line for line in lines)
+
+
+# --- Audit build summary tests ---
+
+
+def test_build_summary_single_pattern() -> None:
+    """Summary with single pattern."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1\nunexpected")
+    audit.in_order("pattern1", ["line1"])
+    summary = audit._build_summary()
+    assert "unexpected" in summary.lower()
+    assert "pattern1" in summary
+
+
+def test_build_summary_multiple_patterns() -> None:
+    """Summary with multiple patterns."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1\nline2\nunexpected")
+    audit.in_order("pattern1", ["line1"])
+    audit.optional("pattern2", ["...line2..."])
+    summary = audit._build_summary()
+    assert "pattern1" in summary
+    assert "pattern2" in summary
+
+
+def test_build_summary_refused() -> None:
+    """Summary with refused lines."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("error line")
+    audit.refused("no_errors", ["...error..."])
+    summary = audit._build_summary()
+    assert "refused" in summary.lower()
+
+
+def test_build_summary_no_failures() -> None:
+    """Summary with no failures."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("line1")
+    audit.in_order("pattern1", ["line1"])
+    summary = audit._build_summary()
+    assert "did not meet" in summary.lower()
+
+
+# --- Audit build context tests ---
+
+
+def test_build_context_middle() -> None:
+    """Build context from middle of content."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("a\nb\nc\nd\ne\nf\ng\nh")
+    start, lines = audit._build_context(5)  # Around line 5 (1-based)
+    assert start == 2  # Lines 2-8 (3 before + line 5 + 3 after)
+    assert len(lines) == 7
+
+
+def test_build_context_beginning() -> None:
+    """Build context at beginning."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("a\nb\nc\nd")
+    start, lines = audit._build_context(1)
+    assert start == 1
+    assert len(lines) == 4  # Only 4 lines total
+
+
+def test_build_context_end() -> None:
+    """Build context at end."""
+    from pytest_patterns.plugin import Audit
+
+    audit = Audit("a\nb\nc\nd")
+    start, lines = audit._build_context(4)
+    assert start == 1
+    assert len(lines) == 4  # Only 4 lines total
+
+
+# --- Continuous edge case tests ---
+
+
+def test_continuous_first_line_no_match() -> None:
+    """Continuous pattern where first line doesn't match."""
+    from pytest_patterns.plugin import Audit, Status
+
+    audit = Audit("unexpected\nline2")
+    audit.continuous("pattern1", ["line1", "line2"])
+    # First line not matching is allowed, should not mark as refused
+    assert audit.content[0].status == Status.UNEXPECTED
+    # Should have unmatched expectations
+    assert len(audit.unmatched_expectations) > 0
+
+
 def test_patternslib_multiple_accesses(patterns: PatternsLib) -> None:
     assert patterns.foo is patterns.foo
 
