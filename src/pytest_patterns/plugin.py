@@ -12,11 +12,11 @@ import pytest
 
 
 @pytest.fixture
-def patterns() -> PatternsLib:
+def patterns():
     return PatternsLib()
 
 
-def pytest_addoption(parser: pytest.Parser) -> None:
+def pytest_addoption(parser):
     """Add pytest-patterns command line options."""
     group = parser.getgroup("pytest-patterns")
     group.addoption(
@@ -33,7 +33,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
 
 
-def _should_use_color(config: pytest.Config) -> bool:
+def _should_use_color(config):
     """Determine if colored output should be used.
 
     Color is disabled if:
@@ -50,11 +50,11 @@ def _should_use_color(config: pytest.Config) -> bool:
 
 
 def pytest_assertrepr_compare(
-    config: pytest.Config,
-    op: str,
-    left: Any,
-    right: Any,
-) -> list[str] | None:
+    config,
+    op,
+    left,
+    right,
+):
     if op != "==":
         return None
     use_color = _should_use_color(config)
@@ -68,7 +68,7 @@ def pytest_assertrepr_compare(
             print(line, file=sys.stderr)
         # Return only summary for assertion explanation
         return [report_lines[0]] if report_lines else None
-    elif isinstance(right, Pattern):
+    if isinstance(right, Pattern):
         audit = right._audit(left)
         if config.getoption("--patterns-json"):
             return [json.dumps(audit.to_json(), indent=2)]
@@ -78,8 +78,7 @@ def pytest_assertrepr_compare(
             print(line, file=sys.stderr)
         # Return only summary for assertion explanation
         return [report_lines[0]] if report_lines else None
-    else:
-        return None
+    return None
 
 
 class Status(enum.Enum):
@@ -89,7 +88,7 @@ class Status(enum.Enum):
     REFUSED = 4
 
     @property
-    def symbol(self) -> str:
+    def symbol(self):
         return STATUS_SYMBOLS[self]
 
 
@@ -109,7 +108,7 @@ GRAY_BG = (
 RESET = "\x1b[0m"
 
 
-def describe_whitespace(line: str) -> str | None:
+def describe_whitespace(line):
     """Describe whitespace issue in a line, if any.
 
     Returns None if no whitespace issue, otherwise a description like:
@@ -134,7 +133,7 @@ def describe_whitespace(line: str) -> str | None:
     return None
 
 
-def _describe_whitespace_components(ws: str, prefix: str) -> str:
+def _describe_whitespace_components(ws, prefix):
     """Build description like '4 spaces' or '2 spaces + 1 tab + 2 spaces'."""
     if not ws:
         return ""
@@ -160,7 +159,7 @@ def _describe_whitespace_components(ws: str, prefix: str) -> str:
     return prefix + " + ".join(components)
 
 
-def tab_replace(line: str) -> str:
+def tab_replace(line):
     while (position := line.find("\t")) != -1:
         fill = " " * (8 - (position % 8))
         line = line.replace("\t", fill)
@@ -206,18 +205,17 @@ ascii_to_control_pictures = {
 }
 
 
-def to_control_picture(char: str) -> str:
+def to_control_picture(char):
     return ascii_to_control_pictures.get(ord(char), char)
 
 
-def line_to_control_pictures(line: str) -> str:
+def line_to_control_pictures(line):
     return "".join(to_control_picture(char) for char in line)
 
 
-def match(pattern: str, line: str) -> bool | re.Match[str] | None:
-    if pattern == EMPTY_LINE_PATTERN:
-        if not line:
-            return True
+def match(pattern, line):
+    if pattern == EMPTY_LINE_PATTERN and not line:
+        return True
 
     line = tab_replace(line)
     pattern = re.escape(pattern)
@@ -230,13 +228,13 @@ class Line:
     status: Status = Status.UNEXPECTED
     status_cause: str = ""
 
-    def __init__(self, data: str):
+    def __init__(self, data):
         self.data = data
 
-    def matches(self, expectation: str) -> bool:
+    def matches(self, expectation):
         return bool(match(expectation, self.data))
 
-    def mark(self, status: Status, cause: str) -> None:
+    def mark(self, status, cause):
         if status.value <= self.status.value:
             # Stay in the current status
             return
@@ -255,7 +253,7 @@ class Audit:
     # (pattern_name, refused_line) -> line_number (1-based)
     _matched_refused_positions: dict[tuple[str, str], int]
 
-    def __init__(self, content: str):
+    def __init__(self, content):
         self.unmatched_expectations = []
         self.matched_refused = set()
         self._unmatched_positions = {}
@@ -265,10 +263,10 @@ class Audit:
         for line in content.splitlines():
             self.content.append(Line(line))
 
-    def cursor(self) -> Iterator[Line]:
+    def cursor(self):
         return iter(self.content)
 
-    def in_order(self, name: str, expected_lines: list[str]) -> None:
+    def in_order(self, name, expected_lines):
         """Expect all lines exist and come in order, but they
         may be interleaved with other lines."""
         cursor = self.cursor()
@@ -304,7 +302,7 @@ class Audit:
                     cursor_index = 0
                     last_match_position = 0
 
-    def optional(self, name: str, tolerated_lines: list[str]) -> None:
+    def optional(self, name, tolerated_lines):
         """Those lines may exist and then they may appear anywhere
         a number of times, or they may not exist.
         """
@@ -313,7 +311,7 @@ class Audit:
                 if line.matches(tolerated_line):
                     line.mark(Status.OPTIONAL, name)
 
-    def refused(self, name: str, refused_lines: list[str]) -> None:
+    def refused(self, name, refused_lines):
         for refused_line in refused_lines:
             for line_index, line in enumerate(self.cursor()):
                 if line.matches(refused_line):
@@ -324,7 +322,7 @@ class Audit:
                         line_index + 1
                     )
 
-    def continuous(self, name: str, continuous_lines: list[str]) -> None:
+    def continuous(self, name, continuous_lines):
         continuous_cursor = enumerate(continuous_lines)
         continuous_index, continuous_line = next(continuous_cursor)
         for line in self.cursor():
@@ -356,7 +354,7 @@ class Audit:
                 [(name, line) for i, line in continuous_cursor]
             )
 
-    def _build_summary(self) -> str:
+    def _build_summary(self):
         """Build informative summary line with pattern names and counts."""
         # Collect all pattern names
         all_names: set[str] = set()
@@ -388,7 +386,7 @@ class Audit:
         # Build failure details
         failures: list[str] = []
         is_single_pattern = len(all_names) == 1
-        single_pattern_name = (
+        (
             next(iter(all_names)) if is_single_pattern else None
         )
 
@@ -422,7 +420,7 @@ class Audit:
             )
         return f"Pattern: {'; '.join(failures)}."
 
-    def report(self, use_color: bool = True) -> Iterator[str]:
+    def report(self, use_color = True):
         yield self._build_summary()
         yield ""
         yield " | ".join(
@@ -489,7 +487,7 @@ class Audit:
             for line_no, description in ws_issues:
                 yield f"   Line {line_no}: {description}"
 
-    def _collect_whitespace_issues(self) -> list[tuple[int, str]]:
+    def _collect_whitespace_issues(self):
         """Collect whitespace issues from unexpected content lines.
 
         Returns list of (line_number, description) tuples.
@@ -513,7 +511,7 @@ class Audit:
 
         return issues
 
-    def _find_refused_line_numbers(self, name: str, pattern: str) -> list[int]:
+    def _find_refused_line_numbers(self, name, pattern):
         """Find all line numbers where a refused pattern matched.
 
         Returns list of 1-based line numbers.
@@ -526,7 +524,7 @@ class Audit:
                     line_numbers.append(i + 1)
         return sorted(line_numbers)
 
-    def is_ok(self) -> bool:
+    def is_ok(self):
         if self.unmatched_expectations:
             return False
         for line in self.content:
@@ -534,7 +532,7 @@ class Audit:
                 return False
         return True
 
-    def _build_context(self, position: int) -> tuple[int, list[str]]:
+    def _build_context(self, position):
         """Build context around a position.
 
         Returns (context_start, context_lines) where:
@@ -552,7 +550,7 @@ class Audit:
         context_lines = [self.content[i].data for i in range(start, end)]
         return context_start, context_lines
 
-    def to_json(self) -> dict[str, Any]:
+    def to_json(self):
         """Return structured JSON representation for agents/CI."""
         # Count by status
         counts = dict.fromkeys(Status, 0)
@@ -598,8 +596,8 @@ class Audit:
         }
 
     def _build_unmatched_entry(
-        self, name: str, expected_line: str, *, is_primary: bool = True
-    ) -> dict[str, Any]:
+        self, name, expected_line, *, is_primary = True
+    ):
         """Build JSON entry for an unmatched pattern with context."""
         entry: dict[str, Any] = {
             "pattern": name,
@@ -619,8 +617,8 @@ class Audit:
         return entry
 
     def _build_matched_refused_entry(
-        self, name: str, refused_line: str
-    ) -> dict[str, Any]:
+        self, name, refused_line
+    ):
         """Build JSON entry for a matched refused pattern with context."""
         entry: dict[str, Any] = {
             "pattern": name,
@@ -638,13 +636,13 @@ class Audit:
 
 
 def format_line_report(
-    status: Status,
-    symbol: str,
-    cause: str,
-    line: str,
-    original_line: str | None = None,
-    use_color: bool = True,
-) -> str:
+    status,
+    symbol,
+    cause,
+    line,
+    original_line = None,
+    use_color = True,
+):
     if status not in [Status.EXPECTED, Status.OPTIONAL]:
         # Check for whitespace issues in unexpected/refused lines
         # Use original_line for detection (preserves tabs), line for display
@@ -655,7 +653,7 @@ def format_line_report(
             if not ws_check_line.strip():
                 # Whitespace-only: highlight everything, show original (with tabs)
                 ws_display = _format_whitespace(
-                    original_line if original_line else line
+                    original_line or line
                 )
                 highlighted = (
                     GRAY_BG + ws_display + RESET if use_color else ws_display
@@ -677,7 +675,7 @@ def format_line_report(
     return symbol + " " + cause.ljust(15)[:15] + " | " + line
 
 
-def _format_whitespace(ws: str) -> str:
+def _format_whitespace(ws):
     """Format whitespace with visible but subtle markers.
 
     - Space → · (middle dot, less obtrusive than ␠)
@@ -694,7 +692,7 @@ def _format_whitespace(ws: str) -> str:
     return "".join(result)
 
 
-def pattern_lines(lines: str) -> list[str]:
+def pattern_lines(lines):
     # Remove leading whitespace, ignore empty lines.
     return list(filter(None, lines.splitlines()))
 
@@ -705,7 +703,7 @@ class Pattern:
     ops: list[tuple[str, str, Any]]
     inherited: set[str]
 
-    def __init__(self, library: PatternsLib, name: str):
+    def __init__(self, library, name):
         self.name = name
         self.library = library
         self.ops = []
@@ -713,45 +711,45 @@ class Pattern:
 
     # Modifiers (Verbs)
 
-    def merge(self, *base_patterns: str) -> None:
+    def merge(self, *base_patterns):
         """Merge rules from base_patterns (recursively) into this pattern."""
         self.inherited.update(base_patterns)
 
-    def normalize(self, mode: str) -> None:
+    def normalize(self, mode):
         pass
 
     # Matches (Adjectives)
 
-    def continuous(self, lines: str) -> None:
+    def continuous(self, lines):
         """These lines must appear once and they must be continuous."""
         self.ops.append(("continuous", self.name, pattern_lines(lines)))
 
-    def in_order(self, lines: str) -> None:
+    def in_order(self, lines):
         """These lines must appear once and they must be in order."""
         self.ops.append(("in_order", self.name, pattern_lines(lines)))
 
-    def optional(self, lines: str) -> None:
+    def optional(self, lines):
         """These lines are optional."""
         self.ops.append(("optional", self.name, pattern_lines(lines)))
 
-    def refused(self, lines: str) -> None:
+    def refused(self, lines):
         """If those lines appear they are refused."""
         self.ops.append(("refused", self.name, pattern_lines(lines)))
 
     # Internal API
 
-    def flat_ops(self) -> Iterator[tuple[str, str, Any]]:
+    def flat_ops(self):
         for inherited_pattern in self.inherited:
             yield from getattr(self.library, inherited_pattern).flat_ops()
         yield from self.ops
 
-    def _audit(self, content: str) -> Audit:
+    def _audit(self, content):
         audit = Audit(content)
         for op, *args in self.flat_ops():
             getattr(audit, op)(*args)
         return audit
 
-    def generate_example(self) -> str:
+    def generate_example(self):
         """Generate example text that matches this pattern.
 
         Simple placeholder strategy:
@@ -772,22 +770,21 @@ class Pattern:
 
         return "\n".join(lines)
 
-    def _replace_wildcards(self, line: str) -> str:
+    def _replace_wildcards(self, line):
         """Replace wildcards with simple placeholders."""
         # <empty-line> → empty string
         if line == EMPTY_LINE_PATTERN:
             return ""
         # ... → [...]
-        line = line.replace("...", "[...]")
-        return line
+        return line.replace("...", "[...]")
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other):
         assert isinstance(other, str)
         audit = self._audit(other)
         return audit.is_ok()
 
 
 class PatternsLib:
-    def __getattr__(self, name: str) -> Pattern:
+    def __getattr__(self, name):
         res = self.__dict__[name] = Pattern(self, name)
         return res

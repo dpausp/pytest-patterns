@@ -8,7 +8,7 @@ from pytest_patterns.plugin import PatternsLib
 # TestGenerateExampleBasic - Basic generate_example tests.
 
 
-def test_in_order_returns_exact_lines(patterns: PatternsLib) -> None:
+def test_in_order_returns_exact_lines(patterns):
     """in_order pattern returns exact lines."""
     patterns.simple.in_order(
         """\
@@ -23,8 +23,8 @@ line3
 
 
 def test_continuous_returns_exact_lines(
-    patterns: PatternsLib,
-) -> None:
+    patterns,
+):
     """continuous pattern returns exact lines."""
     patterns.simple.continuous(
         """\
@@ -37,7 +37,7 @@ line2
     assert example == "line1\nline2"
 
 
-def test_optional_returns_exact_lines(patterns: PatternsLib) -> None:
+def test_optional_returns_exact_lines(patterns):
     """optional pattern returns lines (as if they appear)."""
     patterns.simple.optional(
         """\
@@ -54,8 +54,8 @@ maybe2
 
 
 def test_ellipsis_replaced_with_placeholder(
-    patterns: PatternsLib,
-) -> None:
+    patterns,
+):
     """... is replaced with [...] placeholder."""
     patterns.simple.in_order("...error...")
     example = patterns.simple.generate_example()
@@ -63,7 +63,7 @@ def test_ellipsis_replaced_with_placeholder(
     assert example == "[...]error[...]"
 
 
-def test_ellipsis_in_middle(patterns: PatternsLib) -> None:
+def test_ellipsis_in_middle(patterns):
     """... in middle of line is replaced."""
     patterns.simple.in_order("prefix...suffix")
     example = patterns.simple.generate_example()
@@ -71,7 +71,7 @@ def test_ellipsis_in_middle(patterns: PatternsLib) -> None:
     assert example == "prefix[...]suffix"
 
 
-def test_empty_line_marker(patterns: PatternsLib) -> None:
+def test_empty_line_marker(patterns):
     """<empty-line> is replaced with empty string."""
     patterns.simple.in_order(
         """\
@@ -88,7 +88,7 @@ line2
 # TestGenerateExampleRefused - Test refused pattern handling.
 
 
-def test_refused_ignored(patterns: PatternsLib) -> None:
+def test_refused_ignored(patterns):
     """refused patterns are ignored in example."""
     patterns.simple.in_order("good")
     patterns.simple.refused("...bad...")
@@ -97,7 +97,7 @@ def test_refused_ignored(patterns: PatternsLib) -> None:
     assert example == "good"
 
 
-def test_refused_only_returns_empty(patterns: PatternsLib) -> None:
+def test_refused_only_returns_empty(patterns):
     """pattern with only refused returns empty string."""
     patterns.simple.refused("...error...")
     example = patterns.simple.generate_example()
@@ -108,7 +108,7 @@ def test_refused_only_returns_empty(patterns: PatternsLib) -> None:
 # TestGenerateExampleMerge - Test merge handling in generate_example.
 
 
-def test_merge_combines_patterns(patterns: PatternsLib) -> None:
+def test_merge_combines_patterns(patterns):
     """merge combines lines from all patterns."""
     patterns.first.in_order("line1")
     patterns.second.in_order("line2")
@@ -121,7 +121,7 @@ def test_merge_combines_patterns(patterns: PatternsLib) -> None:
     assert "line2" in example
 
 
-def test_merge_with_optional(patterns: PatternsLib) -> None:
+def test_merge_with_optional(patterns):
     """merge with optional includes optional lines."""
     patterns.required.in_order("must")
     patterns.maybe.optional("optional")
@@ -136,7 +136,7 @@ def test_merge_with_optional(patterns: PatternsLib) -> None:
 # TestGenerateExampleMixed - Test mixed pattern types.
 
 
-def test_mixed_in_order_and_continuous(patterns: PatternsLib) -> None:
+def test_mixed_in_order_and_continuous(patterns):
     """mixed in_order and continuous patterns."""
     patterns.simple.in_order("first")
     patterns.simple.continuous("second")
@@ -147,7 +147,7 @@ def test_mixed_in_order_and_continuous(patterns: PatternsLib) -> None:
     assert "second" in example
 
 
-def test_empty_pattern_returns_empty(patterns: PatternsLib) -> None:
+def test_empty_pattern_returns_empty(patterns):
     """pattern with no ops returns empty string."""
     example = patterns.empty.generate_example()
 

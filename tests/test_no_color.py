@@ -13,9 +13,7 @@ from pytest_patterns.plugin import GRAY_BG, RESET, _should_use_color
 PROJECT_ROOT = Path(__file__).parent.parent
 
 
-def run_pytest(
-    test_code: str, *args: str, env: dict[str, str] | None = None
-) -> subprocess.CompletedProcess[str]:
+def run_pytest(test_code, *args, env=None):
     """Run pytest with a test file containing test_code.
 
     Runs from the project root directory where the plugin is installed.
@@ -52,7 +50,7 @@ def run_pytest(
 # TestNoColorFlag - Tests for --patterns-no-color command-line flag.
 
 
-def test_no_color_flag_disables_ansi_codes() -> None:
+def test_no_color_flag_disables_ansi_codes():
     """--patterns-no-color disables ANSI color codes in output."""
     test_code = """
 def test_with_whitespace(patterns):
@@ -72,7 +70,7 @@ def test_with_whitespace(patterns):
     assert "·" in stderr, f"Expected whitespace marker '·' in stderr:\n{stderr}"
 
 
-def test_no_color_flag_preserves_whitespace_markers() -> None:
+def test_no_color_flag_preserves_whitespace_markers():
     """Whitespace markers are still visible without color."""
     test_code = '''
 def test_with_tabs(patterns):
@@ -95,7 +93,7 @@ def test_with_tabs(patterns):
 # TestNoColorEnvVar - Tests for NO_COLOR environment variable.
 
 
-def test_no_color_env_disables_ansi_codes() -> None:
+def test_no_color_env_disables_ansi_codes():
     """NO_COLOR=1 environment variable disables color output."""
     test_code = '''
 def test_with_whitespace(patterns):
@@ -116,7 +114,7 @@ def test_with_whitespace(patterns):
 # TestColorEnabledByDefault - Tests for color being enabled by default.
 
 
-def test_color_auto_disabled_in_non_tty() -> None:
+def test_color_auto_disabled_in_non_tty():
     """Colors are auto-disabled in non-TTY environments (subprocess)."""
     test_code = '''
 def test_with_whitespace(patterns):
@@ -135,7 +133,7 @@ def test_with_whitespace(patterns):
     )
 
 
-def test_color_flag_overrides_tty_detection() -> None:
+def test_color_flag_overrides_tty_detection():
     """--patterns-no-color forces color off even in TTY-like context."""
     test_code = '''
 def test_with_whitespace(patterns):
@@ -166,7 +164,7 @@ def test_flag_disables_color() -> None:
             return False
 
     config = MockConfig()
-    assert _should_use_color(config) is False  # type: ignore
+    assert _should_use_color(config) is False
 
 
 def test_no_flag_no_env_tty_check() -> None:
@@ -179,12 +177,12 @@ def test_no_flag_no_env_tty_check() -> None:
     config = MockConfig()
     # This will check sys.stderr.isatty() which is False in test context
     # so we just verify it returns a boolean
-    result = _should_use_color(config)  # type: ignore
+    result = _should_use_color(config)
     assert isinstance(result, bool)
 
 
 def test_env_var_disables_color(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch,
 ) -> None:
     """NO_COLOR env var disables color."""
     monkeypatch.setenv("NO_COLOR", "1")
@@ -194,13 +192,13 @@ def test_env_var_disables_color(
             return False
 
     config = MockConfig()
-    assert _should_use_color(config) is False  # type: ignore
+    assert _should_use_color(config) is False
 
 
 # TestWhitespaceReportsWithoutColor - Test whitespace reporting works correctly without colors.
 
 
-def test_whitespace_only_line_visible_without_color() -> None:
+def test_whitespace_only_line_visible_without_color():
     """Whitespace-only lines are visible without color highlighting."""
     test_code = '''
 def test_whitespace_only(patterns):
@@ -223,7 +221,7 @@ def test_whitespace_only(patterns):
     assert "····" in stderr, f"Expected '····' in stderr:\n{stderr}"
 
 
-def test_trailing_whitespace_visible_without_color() -> None:
+def test_trailing_whitespace_visible_without_color():
     """Trailing whitespace is visible without color highlighting."""
     test_code = '''
 def test_trailing(patterns):
@@ -248,7 +246,7 @@ def test_trailing(patterns):
 # TestFormatLineReportWithColor - Unit tests for format_line_report with color control.
 
 
-def test_whitespace_with_color_enabled() -> None:
+def test_whitespace_with_color_enabled():
     """Whitespace highlighting uses ANSI codes when color enabled."""
     from pytest_patterns.plugin import Status, format_line_report
 
@@ -262,7 +260,7 @@ def test_whitespace_with_color_enabled() -> None:
     assert "····" in result
 
 
-def test_whitespace_with_color_disabled() -> None:
+def test_whitespace_with_color_disabled():
     """Whitespace highlighting works without ANSI codes."""
     from pytest_patterns.plugin import Status, format_line_report
 
@@ -276,7 +274,7 @@ def test_whitespace_with_color_disabled() -> None:
     assert "····" in result
 
 
-def test_trailing_whitespace_with_color_disabled() -> None:
+def test_trailing_whitespace_with_color_disabled():
     """Trailing whitespace visible without color."""
     from pytest_patterns.plugin import Status, format_line_report
 
@@ -292,7 +290,7 @@ def test_trailing_whitespace_with_color_disabled() -> None:
     assert "hello" in result
 
 
-def test_tabs_with_color_disabled() -> None:
+def test_tabs_with_color_disabled():
     """Tab whitespace visible without color."""
     from pytest_patterns.plugin import Status, format_line_report
 
@@ -309,7 +307,7 @@ def test_tabs_with_color_disabled() -> None:
 # TestAuditReportWithColor - Unit tests for Audit.report() with color control.
 
 
-def test_audit_report_no_color() -> None:
+def test_audit_report_no_color():
     """Audit.report(use_color=False) has no ANSI codes."""
     from pytest_patterns.plugin import Audit
 
@@ -325,7 +323,7 @@ def test_audit_report_no_color() -> None:
     assert "·" in output, f"Expected whitespace marker '·' in:\n{output}"
 
 
-def test_audit_report_with_color() -> None:
+def test_audit_report_with_color():
     """Audit.report(use_color=True) includes ANSI codes."""
     from pytest_patterns.plugin import Audit
 
@@ -337,7 +335,7 @@ def test_audit_report_with_color() -> None:
     assert "\x1b[" in output, f"Expected ANSI codes in:\n{output}"
 
 
-def test_audit_report_no_color_mixed_whitespace() -> None:
+def test_audit_report_no_color_mixed_whitespace():
     """Audit.report with mixed whitespace types and use_color=False."""
     from pytest_patterns.plugin import Audit
 
@@ -352,7 +350,7 @@ def test_audit_report_no_color_mixed_whitespace() -> None:
     assert "→" in output  # Tab marker
 
 
-def test_audit_report_no_color_refused_lines() -> None:
+def test_audit_report_no_color_refused_lines():
     """Audit.report with refused lines and use_color=False."""
     from pytest_patterns.plugin import Audit
 

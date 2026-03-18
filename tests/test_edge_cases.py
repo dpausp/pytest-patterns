@@ -11,17 +11,17 @@ GENERIC_HEADER = [
 ]
 
 
-def extract_summary(report_lines: list[str]) -> str:
+def extract_summary(report_lines):
     """Extract the first line (summary) from a report."""
     return report_lines[0] if report_lines else ""
 
 
-def strip_summary(report_lines: list[str]) -> list[str]:
+def strip_summary(report_lines):
     """Remove the dynamic summary line for comparison."""
     return report_lines[1:] if report_lines else []
 
 
-def strip_line_numbers(lines: list[str]) -> list[str]:
+def strip_line_numbers(lines):
     """Remove line number prefix from report lines.
 
     Lines with line numbers have format: "  1 | content"
@@ -40,8 +40,8 @@ def strip_line_numbers(lines: list[str]) -> list[str]:
 
 
 def test_ical_ordering_produces_reasonable_reports(
-    patterns: PatternsLib,
-) -> None:
+    patterns,
+):
     with (Path(__file__).parent / "fixtures" / "ical-ordering.ical").open(
         "r"
     ) as f:

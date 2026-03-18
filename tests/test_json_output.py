@@ -8,7 +8,7 @@ from pytest_patterns.plugin import PatternsLib
 # TestToJsonBasic - Basic JSON structure tests.
 
 
-def test_passed_status(patterns: PatternsLib) -> None:
+def test_passed_status(patterns):
     """Passed test returns status='passed'."""
     patterns.simple.in_order("hello")
     audit = patterns.simple._audit("hello")
@@ -17,7 +17,7 @@ def test_passed_status(patterns: PatternsLib) -> None:
     assert result["status"] == "passed"
 
 
-def test_failed_status(patterns: PatternsLib) -> None:
+def test_failed_status(patterns):
     """Failed test returns status='failed'."""
     patterns.simple.in_order("hello")
     audit = patterns.simple._audit("goodbye")
@@ -26,7 +26,7 @@ def test_failed_status(patterns: PatternsLib) -> None:
     assert result["status"] == "failed"
 
 
-def test_summary_counts(patterns: PatternsLib) -> None:
+def test_summary_counts(patterns):
     """Summary contains correct counts."""
     patterns.test.in_order(
         """\
@@ -53,7 +53,7 @@ unexpected
     assert result["summary"]["unmatched"] == 0
 
 
-def test_lines_structure(patterns: PatternsLib) -> None:
+def test_lines_structure(patterns):
     """Lines array has correct structure."""
     patterns.test.in_order("expected line")
     audit = patterns.test._audit("expected line")
@@ -70,7 +70,7 @@ def test_lines_structure(patterns: PatternsLib) -> None:
 # TestUnmatchedPatternsWithContext - Tests for unmatched_patterns with context information.
 
 
-def test_unmatched_has_actual_at_line(patterns: PatternsLib) -> None:
+def test_unmatched_has_actual_at_line(patterns):
     """Unmatched pattern shows line number where match failed."""
     patterns.test.in_order(
         """\
@@ -98,7 +98,7 @@ third line
     assert unmatched["actual_at_line"] == 2
 
 
-def test_unmatched_has_actual_line(patterns: PatternsLib) -> None:
+def test_unmatched_has_actual_line(patterns):
     """Unmatched pattern shows what was actually at that position."""
     patterns.test.in_order(
         """\
@@ -122,7 +122,7 @@ third line
     assert unmatched["actual_line"] == "WRONG second line"
 
 
-def test_unmatched_has_context_lines(patterns: PatternsLib) -> None:
+def test_unmatched_has_context_lines(patterns):
     """Unmatched pattern includes surrounding context."""
     patterns.test.in_order(
         """\
@@ -161,8 +161,8 @@ line7
 
 
 def test_context_start_matches_first_context_line(
-    patterns: PatternsLib,
-) -> None:
+    patterns,
+):
     """context_start is the line number of context_lines[0]."""
     patterns.test.in_order(
         """\
@@ -203,8 +203,8 @@ line9
 
 
 def test_context_includes_three_lines_before_and_after(
-    patterns: PatternsLib,
-) -> None:
+    patterns,
+):
     """Context includes 3 lines before and 3 lines after problem."""
     patterns.test.in_order(
         """\
@@ -241,7 +241,7 @@ line7
     assert context[6] == "line7"
 
 
-def test_context_at_start_of_content(patterns: PatternsLib) -> None:
+def test_context_at_start_of_content(patterns):
     """Context is truncated when problem is at start of content."""
     patterns.test.in_order(
         """\
@@ -269,7 +269,7 @@ line3
     assert len(context) <= 7
 
 
-def test_context_at_end_of_content(patterns: PatternsLib) -> None:
+def test_context_at_end_of_content(patterns):
     """Context is truncated when problem is at end of content."""
     patterns.test.in_order(
         """\
@@ -298,7 +298,7 @@ WRONG last
 # TestMatchedRefusedWithContext - Tests for matched_refused with context information.
 
 
-def test_matched_refused_has_context(patterns: PatternsLib) -> None:
+def test_matched_refused_has_context(patterns):
     """Matched refused lines include context."""
     patterns.test.refused("...password...")
     patterns.test.optional("...")  # Accept other lines
@@ -331,8 +331,8 @@ line5
 
 
 def test_multiple_unmatched_all_have_context(
-    patterns: PatternsLib,
-) -> None:
+    patterns,
+):
     """Each unmatched pattern has its own context."""
     patterns.test.in_order(
         """\
@@ -361,7 +361,7 @@ WRONG third
         assert "actual_at_line" in unmatched
 
 
-def test_first_unmatched_is_primary(patterns: PatternsLib) -> None:
+def test_first_unmatched_is_primary(patterns):
     """First unmatched pattern is marked as 'primary' failure."""
     patterns.test.in_order(
         """\
@@ -391,7 +391,7 @@ WRONG third
         assert entry["failure_type"] == "cascading"
 
 
-def test_single_unmatched_is_primary(patterns: PatternsLib) -> None:
+def test_single_unmatched_is_primary(patterns):
     patterns.test.in_order(
         """\
 first
@@ -411,7 +411,7 @@ WRONG second
     assert result["unmatched_patterns"][0]["failure_type"] == "primary"
 
 
-def test_no_failures_means_zero_counts(patterns: PatternsLib) -> None:
+def test_no_failures_means_zero_counts(patterns):
     """Passed test has zero primary/cascading failures."""
     patterns.test.in_order("hello")
     audit = patterns.test._audit("hello")
@@ -421,7 +421,7 @@ def test_no_failures_means_zero_counts(patterns: PatternsLib) -> None:
     assert result["summary"]["cascading_failures"] == 0
 
 
-def test_single_failure_is_primary(patterns: PatternsLib) -> None:
+def test_single_failure_is_primary(patterns):
     """Single failure counts as 1 primary, 0 cascading."""
     patterns.test.in_order("expected")
     audit = patterns.test._audit("wrong")
@@ -432,8 +432,8 @@ def test_single_failure_is_primary(patterns: PatternsLib) -> None:
 
 
 def test_multiple_failures_have_one_primary(
-    patterns: PatternsLib,
-) -> None:
+    patterns,
+):
     """Multiple failures: 1 primary, rest is cascading."""
     patterns.test.in_order(
         """\
@@ -461,7 +461,7 @@ WRONG fourth
 # --- Additional Audit to_json tests ---
 
 
-def test_to_json_success() -> None:
+def test_to_json_success():
     """JSON output for successful match."""
     from pytest_patterns.plugin import Audit
 
@@ -473,7 +473,7 @@ def test_to_json_success() -> None:
     assert result["summary"]["expected"] == 2
 
 
-def test_to_json_failure() -> None:
+def test_to_json_failure():
     """JSON output for failed match."""
     from pytest_patterns.plugin import Audit
 
@@ -486,7 +486,7 @@ def test_to_json_failure() -> None:
     assert result["summary"]["cascading_failures"] == 0
 
 
-def test_to_json_lines() -> None:
+def test_to_json_lines():
     """JSON output includes line details."""
     from pytest_patterns.plugin import Audit
 
@@ -500,7 +500,7 @@ def test_to_json_lines() -> None:
     assert result["lines"][0]["pattern"] == "pattern1"
 
 
-def test_to_json_unmatched_patterns() -> None:
+def test_to_json_unmatched_patterns():
     """JSON output includes unmatched patterns."""
     from pytest_patterns.plugin import Audit
 
@@ -513,7 +513,7 @@ def test_to_json_unmatched_patterns() -> None:
     assert result["unmatched_patterns"][0]["failure_type"] == "primary"
 
 
-def test_to_json_matched_refused() -> None:
+def test_to_json_matched_refused():
     """JSON output includes matched refused patterns."""
     from pytest_patterns.plugin import Audit
 
@@ -524,7 +524,7 @@ def test_to_json_matched_refused() -> None:
     assert result["matched_refused"][0]["pattern"] == "no_errors"
 
 
-def test_to_json_context() -> None:
+def test_to_json_context():
     """JSON output includes context for failures."""
     from pytest_patterns.plugin import Audit
 
@@ -542,7 +542,7 @@ def test_to_json_context() -> None:
 # --- Audit build unmatched entry tests ---
 
 
-def test_build_unmatched_entry_basic() -> None:
+def test_build_unmatched_entry_basic():
     """Basic unmatched entry."""
     from pytest_patterns.plugin import Audit
 
@@ -553,7 +553,7 @@ def test_build_unmatched_entry_basic() -> None:
     assert entry["failure_type"] == "primary"
 
 
-def test_build_unmatched_entry_with_position() -> None:
+def test_build_unmatched_entry_with_position():
     """Unmatched entry with position info."""
     from pytest_patterns.plugin import Audit
 
@@ -566,7 +566,7 @@ def test_build_unmatched_entry_with_position() -> None:
         assert entry["actual_at_line"] >= 1
 
 
-def test_build_unmatched_entry_cascading() -> None:
+def test_build_unmatched_entry_cascading():
     """Cascading failure entry."""
     from pytest_patterns.plugin import Audit
 
@@ -580,7 +580,7 @@ def test_build_unmatched_entry_cascading() -> None:
 # --- Audit build matched refused entry tests ---
 
 
-def test_build_matched_refused_entry_basic() -> None:
+def test_build_matched_refused_entry_basic():
     """Basic matched refused entry."""
     from pytest_patterns.plugin import Audit
 
@@ -594,7 +594,7 @@ def test_build_matched_refused_entry_basic() -> None:
         assert entry["refused_line"] == line_str
 
 
-def test_build_matched_refused_entry_with_position_in_range() -> None:
+def test_build_matched_refused_entry_with_position_in_range():
     """Matched refused entry with position in valid range."""
     from pytest_patterns.plugin import Audit
 
@@ -611,7 +611,7 @@ def test_build_matched_refused_entry_with_position_in_range() -> None:
         assert "context_lines" in entry
 
 
-def test_build_matched_refused_entry_position_out_of_range() -> None:
+def test_build_matched_refused_entry_position_out_of_range():
     """Matched refused entry with position out of range."""
     from pytest_patterns.plugin import Audit
 
@@ -629,7 +629,7 @@ def test_build_matched_refused_entry_position_out_of_range() -> None:
     assert "context_lines" in entry
 
 
-def test_build_unmatched_entry_position_out_of_range() -> None:
+def test_build_unmatched_entry_position_out_of_range():
     """Unmatched entry with position out of range."""
     from pytest_patterns.plugin import Audit
 
@@ -645,7 +645,7 @@ def test_build_unmatched_entry_position_out_of_range() -> None:
 # --- Multi-pattern summary tests ---
 
 
-def test_build_summary_refused_multiple_patterns() -> None:
+def test_build_summary_refused_multiple_patterns():
     """Summary with refused lines from multiple patterns."""
     from pytest_patterns.plugin import Audit
 
@@ -659,7 +659,7 @@ def test_build_summary_refused_multiple_patterns() -> None:
     assert "refused" in summary.lower()
 
 
-def test_build_summary_unmatched_multiple_patterns() -> None:
+def test_build_summary_unmatched_multiple_patterns():
     """Summary with unmatched from multiple patterns."""
     from pytest_patterns.plugin import Audit
 

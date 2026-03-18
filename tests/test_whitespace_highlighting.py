@@ -10,48 +10,48 @@ from pytest_patterns.plugin import (
 # --- describe_whitespace helper tests ---
 
 
-def test_describe_whitespace_no_issue_normal_line() -> None:
+def test_describe_whitespace_no_issue_normal_line():
     """Normal line without whitespace issues returns None."""
     assert describe_whitespace("Hello World") is None
 
 
-def test_describe_whitespace_no_issue_empty_line() -> None:
+def test_describe_whitespace_no_issue_empty_line():
     """Empty line is not a whitespace issue."""
     assert describe_whitespace("") is None
 
 
-def test_describe_whitespace_no_issue_no_trailing() -> None:
+def test_describe_whitespace_no_issue_no_trailing():
     """Line without trailing whitespace is fine."""
     assert describe_whitespace("  indented text") is None
 
 
-def test_describe_whitespace_only_spaces() -> None:
+def test_describe_whitespace_only_spaces():
     """Line with only spaces describes the count."""
     assert describe_whitespace("    ") == "4 spaces"
 
 
-def test_describe_whitespace_only_tabs() -> None:
+def test_describe_whitespace_only_tabs():
     """Line with only tabs describes the count."""
     assert describe_whitespace("\t\t") == "2 tabs"
 
 
-def test_describe_whitespace_only_mixed() -> None:
+def test_describe_whitespace_only_mixed():
     """Line with mixed whitespace describes composition."""
     result = describe_whitespace("  \t  ")
     assert result == "2 spaces + 1 tab + 2 spaces"
 
 
-def test_describe_whitespace_trailing_spaces() -> None:
+def test_describe_whitespace_trailing_spaces():
     """Trailing spaces are detected."""
     assert describe_whitespace("hello  ") == "trailing 2 spaces"
 
 
-def test_describe_whitespace_trailing_tabs() -> None:
+def test_describe_whitespace_trailing_tabs():
     """Trailing tabs are detected."""
     assert describe_whitespace("hello\t") == "trailing 1 tab"
 
 
-def test_describe_whitespace_trailing_mixed() -> None:
+def test_describe_whitespace_trailing_mixed():
     """Trailing mixed whitespace is detected."""
     assert describe_whitespace("hello  \t") == "trailing 2 spaces + 1 tab"
 
@@ -59,33 +59,33 @@ def test_describe_whitespace_trailing_mixed() -> None:
 # --- format_line_report tests ---
 
 
-def test_format_line_report_normal_line_unchanged() -> None:
+def test_format_line_report_normal_line_unchanged():
     """Normal unexpected line uses control pictures."""
     result = format_line_report(Status.UNEXPECTED, "🟡", "", "hello")
     assert "hello" in result
     assert "[" not in result  # No annotation
 
 
-def test_format_line_report_whitespace_only_annotated() -> None:
+def test_format_line_report_whitespace_only_annotated():
     """Whitespace-only line gets highlighted with markers."""
     result = format_line_report(Status.UNEXPECTED, "🟡", "", "    ")
     assert "····" in result  # 4 middle dots for 4 spaces
 
 
-def test_format_line_report_trailing_whitespace_annotated() -> None:
+def test_format_line_report_trailing_whitespace_annotated():
     """Trailing whitespace gets highlighted with markers."""
     result = format_line_report(Status.UNEXPECTED, "🟡", "", "hello  ")
     assert "··" in result  # 2 middle dots for 2 trailing spaces
 
 
-def test_format_line_report_expected_line_no_annotation() -> None:
+def test_format_line_report_expected_line_no_annotation():
     """Expected lines don't get whitespace highlighting."""
     result = format_line_report(Status.EXPECTED, "🟢", "pattern", "    ")
     assert "·" not in result
     assert "\x1b[100m" not in result
 
 
-def test_format_line_report_gray_background_applied() -> None:
+def test_format_line_report_gray_background_applied():
     """Whitespace-only lines get gray background ANSI code."""
     result = format_line_report(Status.UNEXPECTED, "🟡", "", "    ")
     # Gray background: \x1b[100m, Reset: \x1b[0m
@@ -96,7 +96,7 @@ def test_format_line_report_gray_background_applied() -> None:
 # --- Audit whitespace warning tests ---
 
 
-def test_audit_no_warning_when_no_whitespace_issues() -> None:
+def test_audit_no_warning_when_no_whitespace_issues():
     """No warning section when no whitespace issues."""
     audit = Audit("hello\nworld\nfoo")
     audit.in_order("test", ["hello", "world", "foo"])
@@ -104,7 +104,7 @@ def test_audit_no_warning_when_no_whitespace_issues() -> None:
     assert not any("Whitespace issues" in line for line in report_lines)
 
 
-def test_audit_warning_for_whitespace_only_unexpected() -> None:
+def test_audit_warning_for_whitespace_only_unexpected():
     """Warning section appears for whitespace-only unexpected lines."""
     audit = Audit("hello\n    \nworld")
     audit.in_order("test", ["hello", "world"])
@@ -115,7 +115,7 @@ def test_audit_warning_for_whitespace_only_unexpected() -> None:
     assert "4 spaces" in report_text
 
 
-def test_audit_warning_for_trailing_whitespace_unexpected() -> None:
+def test_audit_warning_for_trailing_whitespace_unexpected():
     """Warning for trailing whitespace on unexpected lines."""
     audit = Audit("hello\nworld  \nfoo")
     audit.in_order("test", ["hello", "world", "foo"])
@@ -124,7 +124,7 @@ def test_audit_warning_for_trailing_whitespace_unexpected() -> None:
     assert "Whitespace issues detected" in report_text
 
 
-def test_audit_warning_for_unmatched_whitespace_pattern() -> None:
+def test_audit_warning_for_unmatched_whitespace_pattern():
     """Warning when expected whitespace pattern doesn't match."""
     audit = Audit("hello\n\nworld")  # Empty line, not "    "
     audit.in_order("test", ["hello", "    ", "world"])
@@ -133,7 +133,7 @@ def test_audit_warning_for_unmatched_whitespace_pattern() -> None:
     assert "    " in report_text or "4 spaces" in report_text
 
 
-def test_audit_multiple_whitespace_issues_listed() -> None:
+def test_audit_multiple_whitespace_issues_listed():
     """Multiple whitespace issues are all listed."""
     audit = Audit("hello\n    \nworld\n\t\t\nfoo")
     audit.in_order("test", ["hello", "world", "foo"])
@@ -146,7 +146,7 @@ def test_audit_multiple_whitespace_issues_listed() -> None:
 # --- Integration tests ---
 
 
-def test_whitespace_only_line_mismatch() -> None:
+def test_whitespace_only_line_mismatch():
     """Detect when whitespace-only line doesn't match expected."""
     from pytest_patterns.plugin import PatternsLib
 
@@ -167,7 +167,7 @@ line2
     assert "Whitespace" in report_text or "    " in report_text
 
 
-def test_trailing_whitespace_caught() -> None:
+def test_trailing_whitespace_caught():
     """Trailing whitespace causes match failure."""
     from pytest_patterns.plugin import PatternsLib
 
@@ -187,14 +187,14 @@ def test_trailing_whitespace_caught() -> None:
 # --- Additional whitespace description tests ---
 
 
-def test_describe_whitespace_components_empty() -> None:
+def test_describe_whitespace_components_empty():
     """Empty whitespace string returns empty."""
     from pytest_patterns.plugin import _describe_whitespace_components
 
     assert _describe_whitespace_components("", "") == ""
 
 
-def test_describe_whitespace_components_other_whitespace() -> None:
+def test_describe_whitespace_components_other_whitespace():
     """Other whitespace characters (shouldn't happen often)."""
     from pytest_patterns.plugin import _describe_whitespace_components
 
@@ -206,35 +206,35 @@ def test_describe_whitespace_components_other_whitespace() -> None:
 # --- Additional format_whitespace tests ---
 
 
-def test_format_whitespace_spaces() -> None:
+def test_format_whitespace_spaces():
     """Spaces are converted to middle dots."""
     from pytest_patterns.plugin import _format_whitespace
 
     assert _format_whitespace("    ") == "····"
 
 
-def test_format_whitespace_tabs() -> None:
+def test_format_whitespace_tabs():
     """Tabs are converted to right arrows."""
     from pytest_patterns.plugin import _format_whitespace
 
     assert _format_whitespace("\t\t") == "→→"
 
 
-def test_format_whitespace_mixed() -> None:
+def test_format_whitespace_mixed():
     """Mixed whitespace formatting."""
     from pytest_patterns.plugin import _format_whitespace
 
     assert _format_whitespace(" \t ") == "·→·"
 
 
-def test_format_whitespace_empty() -> None:
+def test_format_whitespace_empty():
     """Empty string."""
     from pytest_patterns.plugin import _format_whitespace
 
     assert _format_whitespace("") == ""
 
 
-def test_format_whitespace_other() -> None:
+def test_format_whitespace_other():
     """Other characters pass through."""
     from pytest_patterns.plugin import _format_whitespace
 
@@ -244,7 +244,7 @@ def test_format_whitespace_other() -> None:
 # --- Additional format_line_report tests ---
 
 
-def test_format_line_report_expected() -> None:
+def test_format_line_report_expected():
     """Format expected line."""
     from pytest_patterns.plugin import format_line_report, Status
 
@@ -256,7 +256,7 @@ def test_format_line_report_expected() -> None:
     assert "line content" in result
 
 
-def test_format_line_report_optional() -> None:
+def test_format_line_report_optional():
     """Format optional line."""
     from pytest_patterns.plugin import format_line_report, Status
 
@@ -267,7 +267,7 @@ def test_format_line_report_optional() -> None:
     assert "pattern1" in result
 
 
-def test_format_line_report_unexpected() -> None:
+def test_format_line_report_unexpected():
     """Format unexpected line."""
     from pytest_patterns.plugin import format_line_report, Status
 
@@ -276,7 +276,7 @@ def test_format_line_report_unexpected() -> None:
     assert "line content" in result
 
 
-def test_format_line_report_with_trailing_whitespace() -> None:
+def test_format_line_report_with_trailing_whitespace():
     """Format line with trailing whitespace (colored)."""
     from pytest_patterns.plugin import format_line_report, Status
 
@@ -292,7 +292,7 @@ def test_format_line_report_with_trailing_whitespace() -> None:
     assert "·" in result  # Whitespace marker
 
 
-def test_format_line_report_with_trailing_whitespace_no_color() -> None:
+def test_format_line_report_with_trailing_whitespace_no_color():
     """Format line with trailing whitespace (no color)."""
     from pytest_patterns.plugin import format_line_report, Status
 
@@ -309,7 +309,7 @@ def test_format_line_report_with_trailing_whitespace_no_color() -> None:
     assert "\x1b[" not in result  # No ANSI codes
 
 
-def test_format_line_report_whitespace_only() -> None:
+def test_format_line_report_whitespace_only():
     """Format whitespace-only line."""
     from pytest_patterns.plugin import format_line_report, Status
 
@@ -325,7 +325,7 @@ def test_format_line_report_whitespace_only() -> None:
     assert "·" in result
 
 
-def test_format_line_report_with_tabs() -> None:
+def test_format_line_report_with_tabs():
     """Format line with trailing tabs."""
     from pytest_patterns.plugin import format_line_report, Status
 
@@ -342,7 +342,7 @@ def test_format_line_report_with_tabs() -> None:
     assert "→" in result or "·" in result
 
 
-def test_format_line_report_long_cause() -> None:
+def test_format_line_report_long_cause():
     """Format with long pattern name (truncated to 15 chars)."""
     from pytest_patterns.plugin import format_line_report, Status
 
@@ -352,7 +352,7 @@ def test_format_line_report_long_cause() -> None:
     assert "very_long_patte" in result  # Truncated to 15
 
 
-def test_format_line_report_no_original_line() -> None:
+def test_format_line_report_no_original_line():
     """Format without original line (uses display line)."""
     from pytest_patterns.plugin import format_line_report, Status
 
@@ -371,7 +371,7 @@ def test_format_line_report_no_original_line() -> None:
 # --- Audit whitespace collection tests ---
 
 
-def test_collect_whitespace_unexpected_trailing() -> None:
+def test_collect_whitespace_unexpected_trailing():
     """Collect trailing whitespace from unexpected lines."""
     from pytest_patterns.plugin import Audit
 
@@ -383,7 +383,7 @@ def test_collect_whitespace_unexpected_trailing() -> None:
     assert "trailing" in issues[0][1]
 
 
-def test_collect_whitespace_unexpected_only_whitespace() -> None:
+def test_collect_whitespace_unexpected_only_whitespace():
     """Collect whitespace-only unexpected lines."""
     from pytest_patterns.plugin import Audit
 
@@ -394,7 +394,7 @@ def test_collect_whitespace_unexpected_only_whitespace() -> None:
     assert "spaces" in issues[0][1]
 
 
-def test_collect_whitespace_unmatched_expected() -> None:
+def test_collect_whitespace_unmatched_expected():
     """Collect whitespace from unmatched expected lines."""
     from pytest_patterns.plugin import Audit
 
