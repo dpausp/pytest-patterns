@@ -5,15 +5,77 @@ import json
 import os
 import re
 import sys
-from collections.abc import Iterator
+from collections.abc import Callable
 from typing import Any
 
 import pytest
 
+# Module-level state for collecting pattern examples
+# Structure: {test_file: {test_name: [dict]}}
+# dict keys: section, expected, actual (all str)
+_pattern_examples: dict[str, dict[str, list[dict[str, str]]]] = {}
+
+
+def _collect_example(
+    pattern: Pattern,
+    test_name: str,
+    test_file: str,
+    actual: str,
+) -> None:
+    """Store pattern example in global collection."""
+    if test_file not in _pattern_examples:
+        _pattern_examples[test_file] = {}
+    if test_name not in _pattern_examples[test_file]:
+        _pattern_examples[test_file][test_name] = []
+
+    expected = pattern.generate_example()
+    _pattern_examples[test_file][test_name].append(
+        {
+            "section": pattern.name,
+            "expected": expected,
+            "actual": actual,
+        }
+    )
+
+
+def _write_examples_file() -> None:
+    """Write collected examples to Markdown file."""
+    if not _pattern_examples:
+        return
+
+    lines: list[str] = ["# Pattern Examples\n"]
+
+    for test_file in sorted(_pattern_examples):
+        lines.append(f"## {test_file}\n")
+        tests = _pattern_examples[test_file]
+        for test_name in sorted(tests):
+            lines.append(f"### {test_name}\n")
+            examples = tests[test_name]
+            for ex in examples:
+                lines.append(f"#### {ex['section']}\n")
+                lines.append("**Expected:**")
+                lines.append("```")
+                lines.append(ex["expected"])
+                lines.append("```\n")
+                lines.append("**Actual:**")
+                lines.append("```")
+                lines.append(ex["actual"])
+                lines.append("```\n")
+
+    with open(".pytest-patterns-examples.md", "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
 
 @pytest.fixture
-def patterns():
-    return PatternsLib()
+def patterns(request: pytest.FixtureRequest):
+    lib = PatternsLib()
+    # Inject collection callback when --generate-pattern-examples is active
+    config = request.config
+    if config.getoption("generate_pattern_examples", False):
+        test_name = request.node.name
+        test_file = request.node.location[0]
+        lib._set_collection_callback(test_name, test_file)
+    return lib
 
 
 def pytest_addoption(parser):
@@ -30,6 +92,16 @@ def pytest_addoption(parser):
         action="store_true",
         default=False,
         help="Disable colored output from pytest-patterns",
+    )
+    group.addoption(
+        "--generate-pattern-examples",
+        action="store_true",
+        default=False,
+        dest="generate_pattern_examples",
+        help=(
+            "Collect pattern examples during test runs and write to "
+            ".pytest-patterns-examples.md"
+        ),
     )
 
 
@@ -79,6 +151,12 @@ def pytest_assertrepr_compare(
         # Return only summary for assertion explanation
         return [report_lines[0]] if report_lines else None
     return None
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Write pattern examples file if collection was active."""
+    if session.config.getoption("generate_pattern_examples", False):
+        _write_examples_file()
 
 
 class Status(enum.Enum):
@@ -702,12 +780,16 @@ class Pattern:
     library: PatternsLib
     ops: list[tuple[str, str, Any]]
     inherited: set[str]
+    _comparison_callback: (
+        Callable[[Pattern, str], None] | None
+    ) = None
 
     def __init__(self, library, name):
         self.name = name
         self.library = library
         self.ops = []
         self.inherited = set()
+        self._comparison_callback = None
 
     # Modifiers (Verbs)
 
@@ -780,11 +862,42 @@ class Pattern:
 
     def __eq__(self, other):
         assert isinstance(other, str)
+        # Collect example if callback is set
+        if self._comparison_callback is not None:
+            self._comparison_callback(self, other)
         audit = self._audit(other)
         return audit.is_ok()
 
 
 class PatternsLib:
+    _collection_test_name: str | None = None
+    _collection_test_file: str | None = None
+
     def __getattr__(self, name):
         res = self.__dict__[name] = Pattern(self, name)
+        # Set callback on newly created patterns if collection is active
+        if self._collection_test_name is not None:
+            res._comparison_callback = self._make_callback()
         return res
+
+    def _set_collection_callback(
+        self, test_name: str, test_file: str
+    ) -> None:
+        """Enable example collection for all patterns from this library."""
+        self._collection_test_name = test_name
+        self._collection_test_file = test_file
+
+    def _make_callback(self) -> Callable[[Pattern, str], None]:
+        """Create a callback that captures test name/file."""
+
+        def callback(pattern: Pattern, actual: str) -> None:
+            assert self._collection_test_name is not None
+            assert self._collection_test_file is not None
+            _collect_example(
+                pattern,
+                self._collection_test_name,
+                self._collection_test_file,
+                actual,
+            )
+
+        return callback
