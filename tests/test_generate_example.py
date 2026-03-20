@@ -152,3 +152,91 @@ def test_empty_pattern_returns_empty(patterns):
     example = patterns.empty.generate_example()
 
     assert example == ""
+
+
+# TestGenerateExampleModes - Test text generation modes.
+
+
+def test_zen_mode_replaces_with_zen_words(patterns):
+    """zen mode replaces ... with words from Zen of Python."""
+    patterns.simple.in_order("prefix...suffix")
+    example = patterns.simple.generate_example(mode="zen")
+
+    assert example.startswith("prefix")
+    assert example.endswith("suffix")
+    assert "[...]" not in example
+    # Should have 2 words in the middle (space-separated)
+    middle = example[len("prefix") : -len("suffix")]
+    assert len(middle.split()) == 2
+
+
+def test_mra_mode_replaces_with_rot13(patterns):
+    """mra mode replaces ... with ROT13-encoded words."""
+    patterns.simple.in_order("prefix...suffix")
+    example = patterns.simple.generate_example(mode="mra")
+
+    assert example.startswith("prefix")
+    assert example.endswith("suffix")
+    assert "[...]" not in example
+    # Should have 2 words in the middle
+    middle = example[len("prefix") : -len("suffix")]
+    assert len(middle.split()) == 2
+
+
+def test_placeholder_mode_is_default(patterns):
+    """placeholder mode is the default."""
+    patterns.simple.in_order("prefix...suffix")
+    example = patterns.simple.generate_example()
+
+    assert example == "prefix[...]suffix"
+
+
+def test_mode_parameter_overrides_class_default(patterns):
+    """mode parameter overrides Pattern.example_mode."""
+    patterns.simple.in_order("prefix...suffix")
+    patterns.simple.example_mode = "zen"
+    example = patterns.simple.generate_example(mode="placeholder")
+
+    assert example == "prefix[...]suffix"
+
+
+def test_zen_mode_sequential_words(patterns):
+    """zen mode uses sequential words for consistency."""
+    patterns.multi.in_order("...-...-... end")
+    example = patterns.multi.generate_example(mode="zen")
+
+    # Should have 3 different filler sections
+    parts = example.split("-")
+    assert len(parts) == 3
+    # Each part should have 2 words (inline wildcards)
+    # Last part ends with " end" so we check before that
+    for part in parts[:-1]:
+        assert len(part.split()) == 2
+    # Last part: 2 words + "end" (with space before)
+    last_words = parts[-1].split()
+    assert len(last_words) == 3
+    assert last_words[-1] == "end"
+
+
+def test_zen_mode_empty_line(patterns):
+    """zen mode handles empty-line marker correctly."""
+    patterns.simple.in_order(
+        """\
+line1
+<empty-line>
+line2
+"""
+    )
+    example = patterns.simple.generate_example(mode="zen")
+
+    assert example == "line1\n\nline2"
+
+
+def test_class_level_example_mode(patterns):
+    """Pattern.example_mode can be set to change default mode."""
+    patterns.simple.in_order("...test...")
+    patterns.simple.example_mode = "zen"
+    example = patterns.simple.generate_example()
+
+    assert "[...]" not in example
+    assert "test" in example

@@ -615,7 +615,7 @@ def test_pattern_replace_wildcards_ellipsis():
 
     lib = PatternsLib()
     p = Pattern(lib, "test")
-    result = p._replace_wildcards("...error...")
+    result = p._replace_wildcards("...error...", mode="placeholder")
     assert result == "[...]error[...]"
 
 
@@ -625,7 +625,7 @@ def test_pattern_replace_wildcards_empty_line():
 
     lib = PatternsLib()
     p = Pattern(lib, "test")
-    result = p._replace_wildcards("<empty-line>")
+    result = p._replace_wildcards("<empty-line>", mode="placeholder")
     assert result == ""
 
 
@@ -635,7 +635,7 @@ def test_pattern_replace_wildcards_normal():
 
     lib = PatternsLib()
     p = Pattern(lib, "test")
-    result = p._replace_wildcards("normal text")
+    result = p._replace_wildcards("normal text", mode="placeholder")
     assert result == "normal text"
 
 

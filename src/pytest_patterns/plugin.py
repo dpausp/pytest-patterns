@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import codecs
 import enum
 import json
 import os
@@ -9,6 +10,38 @@ from collections.abc import Callable
 from typing import Any
 
 import pytest
+
+# ROT13-encoded Zen of Python (this.s)
+_ZEN_ROT13 = (
+    "The Zen of Python, by Tim Peters\n"
+    "\n"
+    "Beauty is better than ugly.\n"
+    "Explicit is better than implicit.\n"
+    "Simple is better than complex.\n"
+    "Complex is better than complicated.\n"
+    "Flat is better than nested.\n"
+    "Sparse is better than dense.\n"
+    "Readability counts.\n"
+    "Special cases aren't special enough to break the rules.\n"
+    "Although practicality beats purity.\n"
+    "Errors should never pass silently.\n"
+    "Unless explicitly silenced.\n"
+    "In the face of ambiguity, refuse the temptation to guess.\n"
+    "There should be one-- and preferably only one --obvious way to do it.\n"
+    "Although that way may not be obvious at first unless you're Dutch.\n"
+    "Now is better than never.\n"
+    "Although never is often better than *right* now.\n"
+    "If the implementation is hard to explain, it's a bad idea.\n"
+    "If the implementation is easy to explain, it may be a good idea.\n"
+    "Namespaces are one honking great idea -- let's do more of those!"
+)
+
+# Decode once at module load (ROT13 decode the English text for zen mode)
+_ZEN_DECODED = codecs.decode(_ZEN_ROT13, "rot13")
+_ZEN_LINES = _ZEN_DECODED.splitlines()
+_ZEN_WORDS: list[str] = []
+for line in _ZEN_LINES:
+    _ZEN_WORDS.extend(line.split())
 
 # Module-level state for collecting pattern examples
 # Structure: {test_file: {test_name: [dict]}}
@@ -783,6 +816,7 @@ class Pattern:
     _comparison_callback: (
         Callable[[Pattern, str], None] | None
     ) = None
+    example_mode: str = "placeholder"  # "placeholder", "zen", or "mra"
 
     def __init__(self, library, name):
         self.name = name
@@ -790,6 +824,8 @@ class Pattern:
         self.ops = []
         self.inherited = set()
         self._comparison_callback = None
+        self._zen_word_index = 0
+        self._zen_line_index = 0
 
     # Modifiers (Verbs)
 
@@ -831,34 +867,84 @@ class Pattern:
             getattr(audit, op)(*args)
         return audit
 
-    def generate_example(self):
+    def generate_example(self, mode: str | None = None) -> str:
         """Generate example text that matches this pattern.
 
-        Simple placeholder strategy:
-        - ... → [...]
-        - <empty-line> → (empty string)
-        - refused patterns are ignored
+        Args:
+            mode: Text generation mode - "placeholder", "zen", or "mra".
+                  Defaults to Pattern.example_mode.
         """
+        if mode is None:
+            mode = self.example_mode
+
+        # Reset zen indices for consistent generation per call
+        self._zen_word_index = 0
+        self._zen_line_index = 0
+
         lines = []
 
         for op, _name, pattern_lines in self.flat_ops():
             if op == "refused":
-                # Skip refused patterns (Option A: ignore)
                 continue
 
             for pattern_line in pattern_lines:
-                replaced = self._replace_wildcards(pattern_line)
+                replaced = self._replace_wildcards(pattern_line, mode)
                 lines.append(replaced)
 
         return "\n".join(lines)
 
-    def _replace_wildcards(self, line):
-        """Replace wildcards with simple placeholders."""
-        # <empty-line> → empty string
+    def _replace_wildcards(self, line: str, mode: str) -> str:
+        """Replace wildcards with mode-appropriate text."""
         if line == EMPTY_LINE_PATTERN:
             return ""
-        # ... → [...]
-        return line.replace("...", "[...]")
+
+        if "..." not in line:
+            return line
+
+        # Split on ..., replace each with generated text
+        parts = line.split("...")
+        result = [parts[0]]
+        for i, part in enumerate(parts[1:], 1):
+            is_line = i == len(parts) - 1 and not part
+            filler = self._generate_filler(mode, is_line=is_line)
+            result.append(filler)
+            result.append(part)
+        return "".join(result)
+
+    def _generate_filler(self, mode: str, *, is_line: bool = False) -> str:
+        """Generate filler text based on mode.
+
+        Args:
+            mode: "placeholder", "zen", or "mra"
+            is_line: True if filler is for a whole line, False for inline
+        """
+        if mode == "placeholder":
+            return "[...]"
+
+        # Select source based on mode
+        if mode == "zen":
+            words = _ZEN_WORDS
+            lines = _ZEN_LINES
+        else:  # mode == "mra"
+            words = _ZEN_ROT13.split()
+            lines = _ZEN_ROT13.splitlines()
+
+        if is_line:
+            # Line-level: 1 full line from Zen (sequential)
+            if self._zen_line_index >= len(lines):
+                self._zen_line_index = 0
+            result = lines[self._zen_line_index]
+            self._zen_line_index += 1
+            return result
+
+        # Inline: 2 words from Zen (sequential)
+        selected_words: list[str] = []
+        for _ in range(2):
+            if self._zen_word_index >= len(words):
+                self._zen_word_index = 0
+            selected_words.append(words[self._zen_word_index])
+            self._zen_word_index += 1
+        return " ".join(selected_words)
 
     def __eq__(self, other):
         assert isinstance(other, str)
